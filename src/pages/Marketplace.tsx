@@ -173,6 +173,7 @@ const Marketplace = () => {
                 <SelectItem value="Warzone 2.0">Warzone 2.0</SelectItem>
                 <SelectItem value="MW2">Modern Warfare 2</SelectItem>
                 <SelectItem value="Black Ops Cold War">Black Ops Cold War</SelectItem>
+                <SelectItem value="COD Mobile">Call of Duty Mobile</SelectItem>
               </SelectContent>
             </Select>
           </div>

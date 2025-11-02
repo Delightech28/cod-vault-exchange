@@ -152,6 +152,7 @@ const SellAccount = () => {
                         <SelectItem value="MW2">Modern Warfare 2</SelectItem>
                         <SelectItem value="Black Ops Cold War">Black Ops Cold War</SelectItem>
                         <SelectItem value="Vanguard">Vanguard</SelectItem>
+                        <SelectItem value="COD Mobile">Call of Duty Mobile</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
