@@ -179,9 +179,9 @@ export default function Dashboard() {
               )}
 
               <Button variant="outline" className="h-auto flex-col py-6" asChild>
-                <Link to="/profile">
-                  <Shield className="h-6 w-6 mb-2" />
-                  Verify Identity
+                <Link to="/my-listings">
+                  <ShoppingBag className="h-6 w-6 mb-2" />
+                  My Listings
                 </Link>
               </Button>
 
