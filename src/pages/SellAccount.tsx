@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -13,21 +14,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DollarSign, Upload } from "lucide-react";
+import { DollarSign, Upload, Video } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const SellAccount = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: "",
     game: "",
     level: "",
+    rank: "",
     kd: "",
     price: "",
     description: "",
     platform: "",
+    itemsIncluded: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate form
@@ -36,20 +42,64 @@ const SellAccount = () => {
       return;
     }
 
-    toast.success("Account listing submitted!", {
-      description: "Your account will be reviewed and listed within 24 hours.",
-    });
+    setIsSubmitting(true);
 
-    // Reset form
-    setFormData({
-      title: "",
-      game: "",
-      level: "",
-      kd: "",
-      price: "",
-      description: "",
-      platform: "",
-    });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error("You must be logged in to create a listing");
+        navigate("/auth");
+        return;
+      }
+
+      const itemsArray = formData.itemsIncluded
+        ? formData.itemsIncluded.split(",").map(item => item.trim()).filter(Boolean)
+        : [];
+
+      const { error } = await supabase
+        .from("listings")
+        .insert([{
+          seller_id: user.id,
+          title: formData.title,
+          game_name: formData.game,
+          level: formData.level ? parseInt(formData.level) : null,
+          rank: formData.rank || null,
+          price: parseFloat(formData.price),
+          description: formData.description,
+          items_included: itemsArray,
+          status: "draft" as const,
+        }]);
+
+      if (error) throw error;
+
+      toast.success("Account listing submitted!", {
+        description: "Your listing has been created and will be reviewed soon.",
+      });
+
+      // Reset form
+      setFormData({
+        title: "",
+        game: "",
+        level: "",
+        rank: "",
+        kd: "",
+        price: "",
+        description: "",
+        platform: "",
+        itemsIncluded: "",
+      });
+
+      // Navigate to marketplace after a short delay
+      setTimeout(() => navigate("/marketplace"), 1500);
+    } catch (error: any) {
+      console.error("Error creating listing:", error);
+      toast.error("Failed to submit listing", {
+        description: error.message || "Please try again later",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
@@ -68,29 +118,6 @@ const SellAccount = () => {
               List your Call of Duty account and reach thousands of potential buyers
             </p>
           </div>
-
-          <Card className="bg-card border-border mb-8">
-            <CardHeader>
-              <CardTitle>Why Sell With Us?</CardTitle>
-              <CardDescription>
-                Join thousands of sellers who trust our platform
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-1">0%</div>
-                <div className="text-sm text-muted-foreground">Commission Fee</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-1">24h</div>
-                <div className="text-sm text-muted-foreground">Average Listing Time</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-1">100%</div>
-                <div className="text-sm text-muted-foreground">Secure Transactions</div>
-              </div>
-            </CardContent>
-          </Card>
 
           <form onSubmit={handleSubmit}>
             <Card className="bg-card border-border">
@@ -147,24 +174,46 @@ const SellAccount = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="level">Level/Rank</Label>
+                    <Label htmlFor="level">Level</Label>
                     <Input
                       id="level"
-                      placeholder="e.g., Prestige 10"
+                      type="number"
+                      placeholder="e.g., 55"
                       value={formData.level}
                       onChange={(e) => handleChange("level", e.target.value)}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="kd">K/D Ratio</Label>
+                    <Label htmlFor="rank">Rank</Label>
                     <Input
-                      id="kd"
-                      placeholder="e.g., 2.5"
-                      value={formData.kd}
-                      onChange={(e) => handleChange("kd", e.target.value)}
+                      id="rank"
+                      placeholder="e.g., Prestige 10"
+                      value={formData.rank}
+                      onChange={(e) => handleChange("rank", e.target.value)}
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="kd">K/D Ratio</Label>
+                  <Input
+                    id="kd"
+                    placeholder="e.g., 2.5"
+                    value={formData.kd}
+                    onChange={(e) => handleChange("kd", e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="itemsIncluded">Items Included</Label>
+                  <Input
+                    id="itemsIncluded"
+                    placeholder="e.g., All weapons, Rare camos, Max prestige (comma separated)"
+                    value={formData.itemsIncluded}
+                    onChange={(e) => handleChange("itemsIncluded", e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Separate multiple items with commas</p>
                 </div>
 
                 <div className="space-y-2">
@@ -195,14 +244,14 @@ const SellAccount = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Screenshots (Optional)</Label>
+                  <Label>Gameplay Video (Optional)</Label>
                   <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer">
-                    <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <Video className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                     <div className="text-sm text-muted-foreground">
                       Click to upload or drag and drop
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      PNG, JPG up to 10MB
+                      MP4, MOV up to 50MB
                     </div>
                   </div>
                 </div>
@@ -212,8 +261,9 @@ const SellAccount = () => {
                     type="submit"
                     className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
                     size="lg"
+                    disabled={isSubmitting}
                   >
-                    Submit Listing
+                    {isSubmitting ? "Submitting..." : "Submit Listing"}
                   </Button>
                   <Button 
                     type="button"
@@ -223,12 +273,15 @@ const SellAccount = () => {
                         title: "",
                         game: "",
                         level: "",
+                        rank: "",
                         kd: "",
                         price: "",
                         description: "",
                         platform: "",
+                        itemsIncluded: "",
                       });
                     }}
+                    disabled={isSubmitting}
                   >
                     Clear
                   </Button>

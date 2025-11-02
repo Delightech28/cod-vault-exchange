@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Shield, Star, ArrowLeft, User, Trophy, Target, Clock } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const accountsData: Record<string, any> = {
   "1": {
@@ -38,7 +40,59 @@ const accountsData: Record<string, any> = {
 
 const AccountDetails = () => {
   const { id } = useParams();
-  const account = accountsData[id || "1"] || accountsData["1"];
+  const [account, setAccount] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAccountDetails();
+  }, [id]);
+
+  const fetchAccountDetails = async () => {
+    try {
+      // Check if it's a real listing (starts with "listing-")
+      if (id?.startsWith("listing-")) {
+        const listingId = id.replace("listing-", "");
+        const { data, error } = await supabase
+          .from("listings")
+          .select("*")
+          .eq("id", listingId)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          setAccount({
+            id: `listing-${data.id}`,
+            title: data.title,
+            game: data.game_name,
+            level: data.level || "N/A",
+            rank: data.rank || "N/A",
+            kd: "N/A",
+            price: `$${data.price}`,
+            verified: data.verified_at !== null,
+            rating: 4.5,
+            reviews: 0,
+            description: data.description || "No description provided.",
+            playtime: "N/A",
+            wins: "N/A",
+            platform: "Cross-platform",
+            seller: "Anonymous",
+            sellerRating: 4.5,
+            features: data.items_included || [],
+          });
+        }
+      } else {
+        // Use mock data
+        setAccount(accountsData[id || "1"] || accountsData["1"]);
+      }
+    } catch (error) {
+      console.error("Error fetching account details:", error);
+      // Fallback to mock data
+      setAccount(accountsData[id || "1"] || accountsData["1"]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handlePurchase = () => {
     toast.success("Added to cart! Proceeding to checkout...", {
@@ -51,6 +105,30 @@ const AccountDetails = () => {
       description: "Feature coming soon",
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <main className="container mx-auto px-4 py-12">
+          <div className="text-center py-12">Loading...</div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!account) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <main className="container mx-auto px-4 py-12">
+          <div className="text-center py-12">Account not found</div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
