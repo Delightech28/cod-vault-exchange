@@ -229,7 +229,10 @@ export default function Onboarding() {
                   <Label htmlFor="country">Country</Label>
                   <CountrySelect
                     value={country}
-                    onChange={setCountry}
+                    onChange={(countryValue, timezoneValue) => {
+                      setCountry(countryValue);
+                      setTimezone(timezoneValue);
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
