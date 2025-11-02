@@ -120,7 +120,7 @@ const Marketplace = () => {
       title: listing.title,
       game: listing.game_name,
       level: listing.rank || `Level ${listing.level || 0}`,
-      kd: "N/A",
+      kd: listing.kd_ratio || "N/A",
       price: `$${listing.price}`,
       verified: listing.verified_at !== null,
       rating: 4.5,

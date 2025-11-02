@@ -52,33 +52,52 @@ const AccountDetails = () => {
       // Check if it's a real listing (starts with "listing-")
       if (id?.startsWith("listing-")) {
         const listingId = id.replace("listing-", "");
+        
+        // Increment view count
+        await supabase.rpc("increment_listing_views", { listing_id: listingId });
+        
         const { data, error } = await supabase
           .from("listings")
           .select("*")
           .eq("id", listingId)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
 
         if (data) {
+          // Fetch seller profile
+          let sellerName = "Anonymous";
+          if (data.seller_id) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("username, display_name")
+              .eq("user_id", data.seller_id)
+              .maybeSingle();
+            
+            if (profile) {
+              sellerName = profile.display_name || profile.username || "Anonymous";
+            }
+          }
+          
           setAccount({
             id: `listing-${data.id}`,
             title: data.title,
             game: data.game_name,
-            level: data.level || "N/A",
+            level: data.level ? `Level ${data.level}` : "N/A",
             rank: data.rank || "N/A",
-            kd: "N/A",
+            kd: data.kd_ratio || "N/A",
             price: `$${data.price}`,
             verified: data.verified_at !== null,
             rating: 4.5,
             reviews: 0,
             description: data.description || "No description provided.",
-            playtime: "N/A",
-            wins: "N/A",
+            playtime: data.playtime || "N/A",
+            wins: data.total_wins || "N/A",
             platform: "Cross-platform",
-            seller: "Anonymous",
+            seller: sellerName,
             sellerRating: 4.5,
             features: data.items_included || [],
+            viewsCount: data.views_count || 0,
           });
         }
       } else {

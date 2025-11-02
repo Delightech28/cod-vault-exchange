@@ -30,6 +30,8 @@ const SellAccount = () => {
     description: "",
     platform: "",
     itemsIncluded: "",
+    playtime: "",
+    totalWins: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -65,6 +67,9 @@ const SellAccount = () => {
           game_name: formData.game,
           level: formData.level ? parseInt(formData.level) : null,
           rank: formData.rank || null,
+          kd_ratio: formData.kd || null,
+          playtime: formData.playtime || null,
+          total_wins: formData.totalWins || null,
           price: parseFloat(formData.price),
           description: formData.description,
           items_included: itemsArray,
@@ -88,6 +93,8 @@ const SellAccount = () => {
         description: "",
         platform: "",
         itemsIncluded: "",
+        playtime: "",
+        totalWins: "",
       });
 
       // Navigate to marketplace after a short delay
@@ -197,14 +204,36 @@ const SellAccount = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="kd">K/D Ratio</Label>
-                  <Input
-                    id="kd"
-                    placeholder="e.g., 2.5"
-                    value={formData.kd}
-                    onChange={(e) => handleChange("kd", e.target.value)}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="kd">K/D Ratio</Label>
+                    <Input
+                      id="kd"
+                      placeholder="e.g., 2.5"
+                      value={formData.kd}
+                      onChange={(e) => handleChange("kd", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="playtime">Playtime</Label>
+                    <Input
+                      id="playtime"
+                      placeholder="e.g., 500+ hours"
+                      value={formData.playtime}
+                      onChange={(e) => handleChange("playtime", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="totalWins">Total Wins</Label>
+                    <Input
+                      id="totalWins"
+                      placeholder="e.g., 2,500+"
+                      value={formData.totalWins}
+                      onChange={(e) => handleChange("totalWins", e.target.value)}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -281,6 +310,8 @@ const SellAccount = () => {
                         description: "",
                         platform: "",
                         itemsIncluded: "",
+                        playtime: "",
+                        totalWins: "",
                       });
                     }}
                     disabled={isSubmitting}

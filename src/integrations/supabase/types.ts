@@ -191,7 +191,9 @@ export type Database = {
           game_name: string
           id: string
           items_included: string[] | null
+          kd_ratio: string | null
           level: number | null
+          playtime: string | null
           price: number
           proof_documents: string[] | null
           rank: string | null
@@ -201,6 +203,7 @@ export type Database = {
           status: Database["public"]["Enums"]["listing_status"] | null
           status_reason: string | null
           title: string
+          total_wins: string | null
           updated_at: string
           verified_at: string | null
           verified_by: string | null
@@ -212,7 +215,9 @@ export type Database = {
           game_name: string
           id?: string
           items_included?: string[] | null
+          kd_ratio?: string | null
           level?: number | null
+          playtime?: string | null
           price: number
           proof_documents?: string[] | null
           rank?: string | null
@@ -222,6 +227,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["listing_status"] | null
           status_reason?: string | null
           title: string
+          total_wins?: string | null
           updated_at?: string
           verified_at?: string | null
           verified_by?: string | null
@@ -233,7 +239,9 @@ export type Database = {
           game_name?: string
           id?: string
           items_included?: string[] | null
+          kd_ratio?: string | null
           level?: number | null
+          playtime?: string | null
           price?: number
           proof_documents?: string[] | null
           rank?: string | null
@@ -243,6 +251,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["listing_status"] | null
           status_reason?: string | null
           title?: string
+          total_wins?: string | null
           updated_at?: string
           verified_at?: string | null
           verified_by?: string | null
@@ -425,6 +434,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_listing_views: {
+        Args: { listing_id: string }
+        Returns: undefined
       }
       is_admin_or_moderator: { Args: { _user_id: string }; Returns: boolean }
     }
