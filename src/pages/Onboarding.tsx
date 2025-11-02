@@ -7,10 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Shield, Wallet, TrendingUp } from 'lucide-react';
+import { Loader2, Shield, Wallet, TrendingUp, ArrowLeft } from 'lucide-react';
 import { CountrySelect } from '@/components/CountrySelect';
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from '@/components/ui/input-otp';
 
-type OnboardingStep = 'profile' | 'phone' | 'account-type' | 'kyc' | 'tour';
+type OnboardingStep = 'profile' | 'phone' | 'verify-otp' | 'account-type' | 'kyc' | 'tour';
 
 export default function Onboarding() {
   const [step, setStep] = useState<OnboardingStep>('profile');
@@ -89,12 +94,38 @@ export default function Onboarding() {
     e.preventDefault();
     setLoading(true);
 
-    // Note: Actual SMS OTP would require Twilio/similar via edge function
-    // For now, we'll just save the phone number
+    // Simulate sending OTP
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    setLoading(false);
+
+    toast({
+      title: 'Code sent!',
+      description: 'We sent a verification code to your phone.',
+    });
+
+    setStep('verify-otp');
+  };
+
+  const handleOtpVerify = async () => {
+    if (otp.length !== 6) {
+      toast({
+        title: 'Invalid code',
+        description: 'Please enter a 6-digit code.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    // Demo: Accept any 6-digit code
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     const { error } = await supabase
       .from('profiles')
       .update({
-        phone_number: phoneNumber,
+        phone_number: `${countryDialCode}${phoneNumber}`,
         phone_verified: true,
         phone_verified_at: new Date().toISOString(),
       })
@@ -112,8 +143,8 @@ export default function Onboarding() {
     }
 
     toast({
-      title: 'Phone verified',
-      description: 'Your phone number has been verified.',
+      title: 'Phone verified!',
+      description: 'Your phone number has been verified successfully.',
     });
 
     setStep('account-type');
@@ -179,6 +210,7 @@ export default function Onboarding() {
   const stepNumber = {
     'profile': 1,
     'phone': 2,
+    'verify-otp': 2,
     'account-type': 3,
     'kyc': 4,
     'tour': 5,
@@ -285,14 +317,75 @@ export default function Onboarding() {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Note: SMS verification is currently simulated. Full SMS integration requires additional setup.
+                    Note: SMS verification is currently simulated for demo purposes.
                   </p>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Verify Phone
+                  Send Code
                 </Button>
               </form>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === 'verify-otp' && (
+          <Card>
+            <CardHeader>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStep('phone')}
+                className="mb-2 -ml-2"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
+              <CardTitle>Enter Verification Code</CardTitle>
+              <CardDescription>
+                We sent a 6-digit code to {countryDialCode} {phoneNumber}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex flex-col items-center space-y-4">
+                <InputOTP
+                  maxLength={6}
+                  value={otp}
+                  onChange={(value) => setOtp(value)}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+                <p className="text-xs text-muted-foreground text-center">
+                  Demo mode: Enter any 6-digit code
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <Button 
+                  onClick={handleOtpVerify} 
+                  className="w-full" 
+                  disabled={loading || otp.length !== 6}
+                >
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Verify Code
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={handlePhoneSubmit}
+                  disabled={loading}
+                >
+                  Resend Code
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
