@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
+import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-cod.jpg";
 
 const Hero = () => {
@@ -28,25 +29,16 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 mb-8">
-            <Button 
-              size="lg" 
-              className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg"
-              onClick={() => {
-                document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              Browse Accounts
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-              onClick={() => {
-                document.getElementById('sell')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              Sell Your Account
-            </Button>
+            <Link to="/marketplace">
+              <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg">
+                Browse Accounts
+              </Button>
+            </Link>
+            <Link to="/sell">
+              <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                Sell Your Account
+              </Button>
+            </Link>
           </div>
 
           {/* Search Bar */}

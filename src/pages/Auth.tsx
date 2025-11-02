@@ -1,0 +1,190 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import Navigation from "@/components/Navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { ArrowLeft } from "lucide-react";
+
+const Auth = () => {
+  const [signInData, setSignInData] = useState({ email: "", password: "" });
+  const [signUpData, setSignUpData] = useState({ 
+    name: "", 
+    email: "", 
+    password: "", 
+    confirmPassword: "" 
+  });
+
+  const handleSignIn = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast.success("Signed in successfully!");
+    // Redirect logic would go here
+  };
+
+  const handleSignUp = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (signUpData.password !== signUpData.confirmPassword) {
+      toast.error("Passwords don't match!");
+      return;
+    }
+
+    toast.success("Account created successfully!");
+    // Registration logic would go here
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      
+      <main className="container mx-auto px-4 py-12">
+        <Link to="/" className="inline-flex items-center text-primary hover:text-primary/80 mb-6">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Home
+        </Link>
+
+        <div className="max-w-md mx-auto">
+          <Tabs defaultValue="signin" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-8">
+              <TabsTrigger value="signin">Sign In</TabsTrigger>
+              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            </TabsList>
+
+            {/* Sign In Tab */}
+            <TabsContent value="signin">
+              <Card className="bg-card border-border">
+                <CardHeader>
+                  <CardTitle>Welcome Back</CardTitle>
+                  <CardDescription>
+                    Sign in to your account to continue
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSignIn} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-email">Email</Label>
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        placeholder="your.email@example.com"
+                        value={signInData.email}
+                        onChange={(e) => setSignInData({...signInData, email: e.target.value})}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="signin-password">Password</Label>
+                        <button 
+                          type="button"
+                          className="text-xs text-primary hover:underline"
+                          onClick={() => toast.info("Password reset coming soon")}
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
+                      <Input
+                        id="signin-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={signInData.password}
+                        onChange={(e) => setSignInData({...signInData, password: e.target.value})}
+                        required
+                      />
+                    </div>
+
+                    <Button 
+                      type="submit"
+                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                    >
+                      Sign In
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Sign Up Tab */}
+            <TabsContent value="signup">
+              <Card className="bg-card border-border">
+                <CardHeader>
+                  <CardTitle>Create Account</CardTitle>
+                  <CardDescription>
+                    Join thousands of gamers on our platform
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-name">Full Name</Label>
+                      <Input
+                        id="signup-name"
+                        placeholder="John Doe"
+                        value={signUpData.name}
+                        onChange={(e) => setSignUpData({...signUpData, name: e.target.value})}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-email">Email</Label>
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="your.email@example.com"
+                        value={signUpData.email}
+                        onChange={(e) => setSignUpData({...signUpData, email: e.target.value})}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">Password</Label>
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={signUpData.password}
+                        onChange={(e) => setSignUpData({...signUpData, password: e.target.value})}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-confirm">Confirm Password</Label>
+                      <Input
+                        id="signup-confirm"
+                        type="password"
+                        placeholder="••••••••"
+                        value={signUpData.confirmPassword}
+                        onChange={(e) => setSignUpData({...signUpData, confirmPassword: e.target.value})}
+                        required
+                      />
+                    </div>
+
+                    <div className="text-xs text-muted-foreground">
+                      By creating an account, you agree to our Terms of Service and Privacy Policy.
+                    </div>
+
+                    <Button 
+                      type="submit"
+                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                    >
+                      Create Account
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default Auth;
