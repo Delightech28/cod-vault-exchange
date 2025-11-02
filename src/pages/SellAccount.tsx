@@ -168,6 +168,7 @@ const SellAccount = () => {
                         <SelectItem value="PlayStation">PlayStation</SelectItem>
                         <SelectItem value="Xbox">Xbox</SelectItem>
                         <SelectItem value="PC">PC</SelectItem>
+                        <SelectItem value="Mobile (iOS/Android)">Mobile (iOS/Android)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
