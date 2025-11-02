@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Shield, Wallet, TrendingUp } from 'lucide-react';
+import { CountrySelect } from '@/components/CountrySelect';
 
 type OnboardingStep = 'profile' | 'phone' | 'account-type' | 'kyc' | 'tour';
 
@@ -37,6 +38,11 @@ export default function Onboarding() {
       return;
     }
     setUserId(user.id);
+
+    // Auto-populate display name from user metadata
+    if (user.user_metadata?.full_name) {
+      setDisplayName(user.user_metadata.full_name);
+    }
 
     // Check if onboarding already completed
     const { data: profile } = await supabase
@@ -221,12 +227,9 @@ export default function Onboarding() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="country">Country</Label>
-                  <Input
-                    id="country"
+                  <CountrySelect
                     value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    placeholder="United States"
-                    required
+                    onChange={setCountry}
                   />
                 </div>
                 <div className="space-y-2">
