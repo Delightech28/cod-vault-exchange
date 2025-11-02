@@ -244,7 +244,7 @@ const SellAccount = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Gameplay Video (Optional)</Label>
+                  <Label>Proof</Label>
                   <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer">
                     <Video className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                     <div className="text-sm text-muted-foreground">
