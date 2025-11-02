@@ -155,13 +155,61 @@ const Navigation = () => {
             </>
           )}
 
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden text-foreground"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            <Menu className="h-6 w-6" />
-          </button>
+          {/* Mobile: Avatar + Menu Button */}
+          <div className="md:hidden flex items-center space-x-2">
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                    <Avatar className="h-9 w-9">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {profile?.username?.[0]?.toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {profile?.display_name || profile?.username}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        @{profile?.username}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/wallet" className="cursor-pointer">
+                      Wallet
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/support" className="cursor-pointer">
+                      Support
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <button
+              className="text-foreground"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}
