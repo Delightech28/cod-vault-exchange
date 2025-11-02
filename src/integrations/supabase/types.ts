@@ -252,7 +252,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: Database["public"]["Enums"]["account_type"] | null
+          country: string | null
           created_at: string
+          display_name: string | null
           email: string
           email_verified: boolean | null
           full_name: string | null
@@ -260,14 +263,22 @@ export type Database = {
           is_verified_seller: boolean | null
           kyc_status: Database["public"]["Enums"]["kyc_status"] | null
           kyc_verified_at: string | null
+          onboarding_completed: boolean | null
           phone_number: string | null
           phone_verified: boolean | null
+          phone_verified_at: string | null
+          timezone: string | null
+          tour_completed: boolean | null
           two_factor_enabled: boolean | null
           updated_at: string
           user_id: string
+          username: string | null
         }
         Insert: {
+          account_type?: Database["public"]["Enums"]["account_type"] | null
+          country?: string | null
           created_at?: string
+          display_name?: string | null
           email: string
           email_verified?: boolean | null
           full_name?: string | null
@@ -275,14 +286,22 @@ export type Database = {
           is_verified_seller?: boolean | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"] | null
           kyc_verified_at?: string | null
+          onboarding_completed?: boolean | null
           phone_number?: string | null
           phone_verified?: boolean | null
+          phone_verified_at?: string | null
+          timezone?: string | null
+          tour_completed?: boolean | null
           two_factor_enabled?: boolean | null
           updated_at?: string
           user_id: string
+          username?: string | null
         }
         Update: {
+          account_type?: Database["public"]["Enums"]["account_type"] | null
+          country?: string | null
           created_at?: string
+          display_name?: string | null
           email?: string
           email_verified?: boolean | null
           full_name?: string | null
@@ -290,11 +309,16 @@ export type Database = {
           is_verified_seller?: boolean | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"] | null
           kyc_verified_at?: string | null
+          onboarding_completed?: boolean | null
           phone_number?: string | null
           phone_verified?: boolean | null
+          phone_verified_at?: string | null
+          timezone?: string | null
+          tour_completed?: boolean | null
           two_factor_enabled?: boolean | null
           updated_at?: string
           user_id?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -405,6 +429,7 @@ export type Database = {
       is_admin_or_moderator: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
+      account_type: "buyer" | "seller" | "both"
       app_role: "admin" | "moderator" | "user"
       dispute_status:
         | "open"
@@ -560,6 +585,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_type: ["buyer", "seller", "both"],
       app_role: ["admin", "moderator", "user"],
       dispute_status: [
         "open",

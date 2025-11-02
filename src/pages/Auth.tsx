@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
-const Auth = () => {
+export default function Auth() {
+  const [loading, setLoading] = useState(false);
   const [signInData, setSignInData] = useState({ email: "", password: "" });
   const [signUpData, setSignUpData] = useState({ 
     name: "", 
@@ -17,23 +19,87 @@ const Auth = () => {
     password: "", 
     confirmPassword: "" 
   });
+  const navigate = useNavigate();
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Signed in successfully!");
-    // Redirect logic would go here
-  };
+    setLoading(true);
 
-  const handleSignUp = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (signUpData.password !== signUpData.confirmPassword) {
-      toast.error("Passwords don't match!");
+    const { error } = await supabase.auth.signInWithPassword({
+      email: signInData.email,
+      password: signInData.password,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      toast({
+        title: "Sign in failed",
+        description: error.message,
+        variant: "destructive",
+      });
       return;
     }
 
-    toast.success("Account created successfully!");
-    // Registration logic would go here
+    toast({
+      title: "Welcome back!",
+      description: "Redirecting to dashboard...",
+    });
+
+    navigate('/dashboard');
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (signUpData.password !== signUpData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (signUpData.password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    const { error } = await supabase.auth.signUp({
+      email: signUpData.email,
+      password: signUpData.password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/onboarding`,
+        data: {
+          full_name: signUpData.name,
+        }
+      }
+    });
+
+    setLoading(false);
+
+    if (error) {
+      toast({
+        title: "Sign up failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Account created!",
+      description: "Redirecting to complete your profile...",
+    });
+
+    navigate('/onboarding');
   };
 
   return (
@@ -82,7 +148,7 @@ const Auth = () => {
                         <button 
                           type="button"
                           className="text-xs text-primary hover:underline"
-                          onClick={() => toast.info("Password reset coming soon")}
+                          onClick={() => toast({ title: "Password reset", description: "Coming soon" })}
                         >
                           Forgot password?
                         </button>
@@ -97,10 +163,8 @@ const Auth = () => {
                       />
                     </div>
 
-                    <Button 
-                      type="submit"
-                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                    >
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Sign In
                     </Button>
                   </form>
@@ -170,10 +234,8 @@ const Auth = () => {
                       By creating an account, you agree to our Terms of Service and Privacy Policy.
                     </div>
 
-                    <Button 
-                      type="submit"
-                      className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                    >
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Create Account
                     </Button>
                   </form>
@@ -185,6 +247,4 @@ const Auth = () => {
       </main>
     </div>
   );
-};
-
-export default Auth;
+}
