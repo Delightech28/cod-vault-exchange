@@ -14,16 +14,425 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          resource_id: string | null
+          resource_type: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_type: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_type?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      disputes: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          description: string
+          evidence_files: string[] | null
+          id: string
+          opened_by: string
+          reason: string
+          resolution_notes: string | null
+          resolution_outcome: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: Database["public"]["Enums"]["dispute_status"] | null
+          transaction_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          description: string
+          evidence_files?: string[] | null
+          id?: string
+          opened_by: string
+          reason: string
+          resolution_notes?: string | null
+          resolution_outcome?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["dispute_status"] | null
+          transaction_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          description?: string
+          evidence_files?: string[] | null
+          id?: string
+          opened_by?: string
+          reason?: string
+          resolution_notes?: string | null
+          resolution_outcome?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["dispute_status"] | null
+          transaction_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fraud_tracking: {
+        Row: {
+          device_fingerprint: string | null
+          email: string | null
+          flagged_at: string
+          id: string
+          ip_address: string | null
+          is_fraud: boolean | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          suspicious_activity: string | null
+          user_id: string | null
+        }
+        Insert: {
+          device_fingerprint?: string | null
+          email?: string | null
+          flagged_at?: string
+          id?: string
+          ip_address?: string | null
+          is_fraud?: boolean | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          suspicious_activity?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          device_fingerprint?: string | null
+          email?: string | null
+          flagged_at?: string
+          id?: string
+          ip_address?: string | null
+          is_fraud?: boolean | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          suspicious_activity?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      kyc_documents: {
+        Row: {
+          document_type: string
+          file_path: string
+          id: string
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["kyc_status"] | null
+          uploaded_at: string
+          user_id: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          document_type: string
+          file_path: string
+          id?: string
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"] | null
+          uploaded_at?: string
+          user_id: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          document_type?: string
+          file_path?: string
+          id?: string
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"] | null
+          uploaded_at?: string
+          user_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: []
+      }
+      listings: {
+        Row: {
+          created_at: string
+          description: string
+          game_name: string
+          id: string
+          items_included: string[] | null
+          level: number | null
+          price: number
+          proof_documents: string[] | null
+          rank: string | null
+          requires_verification: boolean | null
+          screenshots: string[] | null
+          seller_id: string
+          status: Database["public"]["Enums"]["listing_status"] | null
+          status_reason: string | null
+          title: string
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+          views_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          game_name: string
+          id?: string
+          items_included?: string[] | null
+          level?: number | null
+          price: number
+          proof_documents?: string[] | null
+          rank?: string | null
+          requires_verification?: boolean | null
+          screenshots?: string[] | null
+          seller_id: string
+          status?: Database["public"]["Enums"]["listing_status"] | null
+          status_reason?: string | null
+          title: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          game_name?: string
+          id?: string
+          items_included?: string[] | null
+          level?: number | null
+          price?: number
+          proof_documents?: string[] | null
+          rank?: string | null
+          requires_verification?: boolean | null
+          screenshots?: string[] | null
+          seller_id?: string
+          status?: Database["public"]["Enums"]["listing_status"] | null
+          status_reason?: string | null
+          title?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          views_count?: number | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          email_verified: boolean | null
+          full_name: string | null
+          id: string
+          is_verified_seller: boolean | null
+          kyc_status: Database["public"]["Enums"]["kyc_status"] | null
+          kyc_verified_at: string | null
+          phone_number: string | null
+          phone_verified: boolean | null
+          two_factor_enabled: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          email_verified?: boolean | null
+          full_name?: string | null
+          id?: string
+          is_verified_seller?: boolean | null
+          kyc_status?: Database["public"]["Enums"]["kyc_status"] | null
+          kyc_verified_at?: string | null
+          phone_number?: string | null
+          phone_verified?: boolean | null
+          two_factor_enabled?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          email_verified?: boolean | null
+          full_name?: string | null
+          id?: string
+          is_verified_seller?: boolean | null
+          kyc_status?: Database["public"]["Enums"]["kyc_status"] | null
+          kyc_verified_at?: string | null
+          phone_number?: string | null
+          phone_verified?: boolean | null
+          two_factor_enabled?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          auto_release_at: string | null
+          buyer_id: string
+          buyer_ip: string | null
+          created_at: string
+          delivered_at: string | null
+          delivery_confirmed_at: string | null
+          escrow_held_at: string | null
+          funds_released_at: string | null
+          id: string
+          listing_id: string
+          payment_intent_id: string | null
+          platform_fee: number | null
+          seller_id: string
+          seller_ip: string | null
+          seller_payout: number | null
+          status: Database["public"]["Enums"]["transaction_status"] | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          auto_release_at?: string | null
+          buyer_id: string
+          buyer_ip?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          delivery_confirmed_at?: string | null
+          escrow_held_at?: string | null
+          funds_released_at?: string | null
+          id?: string
+          listing_id: string
+          payment_intent_id?: string | null
+          platform_fee?: number | null
+          seller_id: string
+          seller_ip?: string | null
+          seller_payout?: number | null
+          status?: Database["public"]["Enums"]["transaction_status"] | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          auto_release_at?: string | null
+          buyer_id?: string
+          buyer_ip?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          delivery_confirmed_at?: string | null
+          escrow_held_at?: string | null
+          funds_released_at?: string | null
+          id?: string
+          listing_id?: string
+          payment_intent_id?: string | null
+          platform_fee?: number | null
+          seller_id?: string
+          seller_ip?: string | null
+          seller_payout?: number | null
+          status?: Database["public"]["Enums"]["transaction_status"] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin_or_moderator: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
+      dispute_status:
+        | "open"
+        | "under_review"
+        | "resolved_buyer"
+        | "resolved_seller"
+        | "closed"
+      kyc_status:
+        | "not_submitted"
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "expired"
+      listing_status:
+        | "draft"
+        | "pending_verification"
+        | "approved"
+        | "rejected"
+        | "sold"
+        | "removed"
+      transaction_status:
+        | "pending"
+        | "escrow_held"
+        | "delivered"
+        | "completed"
+        | "disputed"
+        | "refunded"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +559,39 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+      dispute_status: [
+        "open",
+        "under_review",
+        "resolved_buyer",
+        "resolved_seller",
+        "closed",
+      ],
+      kyc_status: [
+        "not_submitted",
+        "pending",
+        "approved",
+        "rejected",
+        "expired",
+      ],
+      listing_status: [
+        "draft",
+        "pending_verification",
+        "approved",
+        "rejected",
+        "sold",
+        "removed",
+      ],
+      transaction_status: [
+        "pending",
+        "escrow_held",
+        "delivered",
+        "completed",
+        "disputed",
+        "refunded",
+        "cancelled",
+      ],
+    },
   },
 } as const
