@@ -20,7 +20,7 @@ import { getCountry } from 'countries-and-timezones';
 
 interface CountrySelectProps {
   value: string;
-  onChange: (value: string, timezone: string) => void;
+  onChange: (value: string, timezone: string, dialCode: string) => void;
 }
 
 // Helper function to get flag emoji from country code
@@ -47,6 +47,7 @@ export function CountrySelect({ value, onChange }: CountrySelectProps) {
         flag: getFlagEmoji(country.cca2),
         code: country.cca2,
         timezone: primaryTimezone,
+        dialCode: country.idd.root + (country.idd.suffixes?.[0] || ''),
       };
     })
     .sort((a, b) => a.label.localeCompare(b.label));
@@ -84,7 +85,7 @@ export function CountrySelect({ value, onChange }: CountrySelectProps) {
                   key={country.code}
                   value={country.value}
                   onSelect={() => {
-                    onChange(country.value, country.timezone);
+                    onChange(country.value, country.timezone, country.dialCode);
                     setOpen(false);
                   }}
                   className="cursor-pointer hover:bg-accent data-[selected=true]:bg-accent"

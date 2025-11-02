@@ -23,6 +23,7 @@ export default function Onboarding() {
   const [displayName, setDisplayName] = useState('');
   const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [country, setCountry] = useState('');
+  const [countryDialCode, setCountryDialCode] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [accountType, setAccountType] = useState<'buyer' | 'seller' | 'both'>('buyer');
@@ -229,9 +230,10 @@ export default function Onboarding() {
                   <Label htmlFor="country">Country</Label>
                   <CountrySelect
                     value={country}
-                    onChange={(countryValue, timezoneValue) => {
+                    onChange={(countryValue, timezoneValue, dialCode) => {
                       setCountry(countryValue);
                       setTimezone(timezoneValue);
+                      setCountryDialCode(dialCode);
                     }}
                   />
                 </div>
@@ -265,16 +267,25 @@ export default function Onboarding() {
               <form onSubmit={handlePhoneSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="+1 (555) 123-4567"
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      value={countryDialCode}
+                      readOnly
+                      className="w-20 bg-muted text-center"
+                      placeholder="+1"
+                    />
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      placeholder="555 123-4567"
+                      className="flex-1"
+                      required
+                    />
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    We'll send you a verification code
+                    Note: SMS verification is currently simulated. Full SMS integration requires additional setup.
                   </p>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
