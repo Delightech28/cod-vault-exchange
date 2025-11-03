@@ -53,7 +53,7 @@ export default function Profile() {
 
     const { data: profileData, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select('username, display_name, country, timezone, phone_number, phone_verified, email_verified, kyc_status, is_verified_seller, account_type, created_at, user_id, average_rating, review_count, avatar_url')
       .eq('user_id', user.id)
       .single();
 
@@ -66,8 +66,8 @@ export default function Profile() {
       return;
     }
 
-    setProfile(profileData);
-    setFormData(profileData);
+    setProfile(profileData as ProfileData);
+    setFormData(profileData as ProfileData);
     setLoading(false);
   };
 
@@ -121,10 +121,10 @@ export default function Profile() {
       .from('avatars')
       .getPublicUrl(filePath);
 
-    // Update profile
+    // Update profile with explicit type casting
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ avatar_url: publicUrl })
+      .update({ avatar_url: publicUrl } as any)
       .eq('user_id', user?.id);
 
     setLoading(false);
