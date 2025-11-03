@@ -31,27 +31,66 @@ export default function Wallet() {
     const paymentStatus = urlParams.get('payment');
     const reference = urlParams.get('reference');
     
-    if (paymentStatus === 'success') {
+    if (paymentStatus === 'success' && reference) {
+      // Verify payment with backend
+      verifyPayment(reference);
+    } else if (paymentStatus === 'success') {
       toast({
         title: "Payment Successful",
         description: "Your wallet will be credited shortly.",
       });
-      // Clean up URL
       window.history.replaceState({}, '', '/wallet');
-      // Refresh balance
-      setTimeout(() => {
-        checkAuth();
-      }, 2000);
+      setTimeout(() => checkAuth(), 2000);
     } else if (paymentStatus === 'cancelled') {
       toast({
         title: "Payment Cancelled",
         description: "Your payment was cancelled. No charges were made.",
         variant: "destructive",
       });
-      // Clean up URL
       window.history.replaceState({}, '', '/wallet');
     }
   }, []);
+
+  const verifyPayment = async (reference: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/verify-payment?reference=${reference}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${session?.access_token}`,
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.verified) {
+        toast({
+          title: "Payment Verified",
+          description: `₦${data.amount.toFixed(2)} has been added to your wallet.`,
+        });
+        // Refresh balance
+        checkAuth();
+      } else {
+        toast({
+          title: "Payment Pending",
+          description: "Your payment is being processed. Balance will update shortly.",
+        });
+      }
+    } catch (error) {
+      console.error('Payment verification error:', error);
+      toast({
+        title: "Payment Processing",
+        description: "Your wallet will be credited shortly.",
+      });
+    } finally {
+      // Clean up URL
+      window.history.replaceState({}, '', '/wallet');
+    }
+  };
 
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
