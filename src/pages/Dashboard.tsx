@@ -63,9 +63,11 @@ export default function Dashboard() {
     setLoading(false);
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
   };
 
   if (loading) {
@@ -83,14 +85,9 @@ export default function Dashboard() {
       <main className="flex-1 container mx-auto px-4 py-8">
         {/* Welcome Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold">
-              Welcome back, {profile?.display_name || profile?.username}
-            </h1>
-            <Button variant="outline" onClick={handleSignOut}>
-              Sign Out
-            </Button>
-          </div>
+          <h1 className="text-3xl font-bold mb-2">
+            {getTimeBasedGreeting()}, {profile?.username}
+          </h1>
           <p className="text-muted-foreground">
             {profile?.account_type === 'buyer' && 'Browse and purchase game accounts securely'}
             {profile?.account_type === 'seller' && 'Manage your listings and sales'}
