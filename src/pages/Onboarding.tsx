@@ -94,6 +94,34 @@ export default function Onboarding() {
     e.preventDefault();
     setLoading(true);
 
+    // Check if phone number already exists
+    const fullPhoneNumber = `${countryDialCode}${phoneNumber}`;
+    const { data: existingProfile, error: checkError } = await supabase
+      .from('profiles')
+      .select('phone_number')
+      .eq('phone_number', fullPhoneNumber)
+      .maybeSingle();
+
+    if (checkError) {
+      setLoading(false);
+      toast({
+        title: 'Error',
+        description: 'Failed to verify phone number availability.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (existingProfile) {
+      setLoading(false);
+      toast({
+        title: 'Phone number already registered',
+        description: 'This phone number is already in use. Please use a different number.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Simulate sending OTP
     await new Promise(resolve => setTimeout(resolve, 1000));
 
