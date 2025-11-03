@@ -224,8 +224,7 @@ export function PaymentConfirmationModal({
               <span className="font-medium">{transaction.listings.game_name}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Seller:</span>
-              <span className="font-medium">{sellerUsername}</span>
+              <span className="text-muted-foreground">Seller: {sellerUsername}</span>
             </div>
             <div className="flex justify-between text-lg font-bold pt-2 border-t">
               <span>Amount:</span>
