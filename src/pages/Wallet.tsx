@@ -20,7 +20,11 @@ export default function Wallet() {
   const [userCountry, setUserCountry] = useState<string | null>(null);
   const [addAmount, setAddAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [bankCode, setBankCode] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
   const [showAddFunds, setShowAddFunds] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -174,11 +178,94 @@ export default function Wallet() {
     }
   };
 
-  const handleWithdraw = () => {
-    toast({
-      title: "Coming Soon",
-      description: "Withdrawal functionality will be available soon.",
-    });
+  const handleWithdraw = async () => {
+    const amount = parseFloat(withdrawAmount);
+    const platformFee = 50;
+    const totalDeduction = amount + platformFee;
+
+    if (!withdrawAmount || amount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid withdrawal amount.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!bankCode || !accountNumber) {
+      toast({
+        title: "Missing Bank Details",
+        description: "Please enter your bank code and account number.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (balance < totalDeduction) {
+      toast({
+        title: "Insufficient Balance",
+        description: `You need ₦${totalDeduction.toFixed(2)} (₦${amount} + ₦${platformFee} fee) but have ₦${balance.toFixed(2)}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setWithdrawing(true);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to withdraw funds.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('withdraw-wallet', {
+        body: {
+          amount,
+          bank_code: bankCode,
+          account_number: accountNumber,
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      toast({
+        title: "Withdrawal Initiated",
+        description: `₦${amount.toFixed(2)} withdrawal is being processed. Funds will arrive shortly.`,
+      });
+
+      // Reset form and close dialog
+      setWithdrawAmount('');
+      setBankCode('');
+      setAccountNumber('');
+      setShowWithdraw(false);
+
+      // Refresh balance
+      setTimeout(() => checkAuth(), 1000);
+
+    } catch (error: any) {
+      console.error('Withdrawal error:', error);
+      toast({
+        title: "Withdrawal Failed",
+        description: error.message || "Failed to process withdrawal. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setWithdrawing(false);
+    }
   };
 
   if (loading) {
@@ -292,7 +379,7 @@ export default function Wallet() {
                   </DialogContent>
                 </Dialog>
 
-                <Dialog>
+                <Dialog open={showWithdraw} onOpenChange={setShowWithdraw}>
                   <DialogTrigger asChild>
                     <Button variant="outline" className="flex-1">
                       <Download className="h-4 w-4 mr-2" />
@@ -303,32 +390,97 @@ export default function Wallet() {
                     <DialogHeader>
                       <DialogTitle>Withdraw Funds</DialogTitle>
                       <DialogDescription>
-                        Transfer funds from your wallet to your bank account
+                        Transfer funds from your wallet to your Nigerian bank account
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
-                        <Label htmlFor="withdraw-amount">Amount (USD)</Label>
+                        <Label htmlFor="withdraw-amount">Amount (NGN)</Label>
                         <Input
                           id="withdraw-amount"
                           type="number"
                           placeholder="0.00"
                           value={withdrawAmount}
                           onChange={(e) => setWithdrawAmount(e.target.value)}
-                          max={balance}
-                          step="0.01"
+                          min="100"
+                          step="10"
+                          disabled={withdrawing}
                         />
                         <p className="text-xs text-muted-foreground">
-                          Available: {formatPrice(balance, userCountry)}
+                          Available: ₦{balance.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}
                         </p>
                       </div>
-                      <Button onClick={handleWithdraw} className="w-full" disabled={balance === 0}>
-                        Request Withdrawal
-                      </Button>
-                      <p className="text-xs text-muted-foreground text-center">
-                        Withdrawals typically process within 2-5 business days
-                      </p>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="bank-code">Bank Code</Label>
+                        <Input
+                          id="bank-code"
+                          type="text"
+                          placeholder="e.g. 058 for GTBank"
+                          value={bankCode}
+                          onChange={(e) => setBankCode(e.target.value)}
+                          disabled={withdrawing}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Enter your bank's code (e.g., 058 for GTBank, 044 for Access Bank)
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="account-number">Account Number</Label>
+                        <Input
+                          id="account-number"
+                          type="text"
+                          placeholder="0123456789"
+                          value={accountNumber}
+                          onChange={(e) => setAccountNumber(e.target.value)}
+                          maxLength={10}
+                          disabled={withdrawing}
+                        />
+                      </div>
+
+                      {withdrawAmount && parseFloat(withdrawAmount) > 0 && (
+                        <div className="bg-muted p-3 rounded-lg space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Withdrawal amount:</span>
+                            <span className="font-medium">₦{parseFloat(withdrawAmount).toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Platform fee:</span>
+                            <span className="font-medium">₦50.00</span>
+                          </div>
+                          <div className="flex justify-between pt-2 border-t">
+                            <span className="font-semibold">Total deduction:</span>
+                            <span className="font-semibold">₦{(parseFloat(withdrawAmount) + 50).toFixed(2)}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
+                    <DialogFooter>
+                      <Button 
+                        onClick={() => setShowWithdraw(false)} 
+                        variant="outline" 
+                        disabled={withdrawing}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleWithdraw} 
+                        disabled={withdrawing || balance === 0 || !withdrawAmount || !bankCode || !accountNumber}
+                      >
+                        {withdrawing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          'Confirm Withdrawal'
+                        )}
+                      </Button>
+                    </DialogFooter>
                   </DialogContent>
                 </Dialog>
               </div>
@@ -358,9 +510,10 @@ export default function Wallet() {
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-muted-foreground">
                 <p>• Funds are held securely in your wallet</p>
-                <p>• Minimum withdrawal: $10.00</p>
+                <p>• Minimum withdrawal: ₦100</p>
                 <p>• No fees for adding funds</p>
-                <p>• Small withdrawal fee may apply</p>
+                <p>• ₦50 platform fee per withdrawal</p>
+                <p>• Withdrawals process within minutes</p>
               </CardContent>
             </Card>
           </div>

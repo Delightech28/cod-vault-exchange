@@ -333,6 +333,41 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_fees: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          transaction_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          transaction_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          transaction_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_fees_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_type: Database["public"]["Enums"]["account_type"] | null
@@ -529,6 +564,39 @@ export type Database = {
           },
         ]
       }
+      user_bank_accounts: {
+        Row: {
+          account_name: string
+          account_number: string
+          bank_code: string
+          bank_name: string
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          bank_code: string
+          bank_name: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          bank_code?: string
+          bank_name?: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -559,9 +627,11 @@ export type Database = {
           ip_address: string | null
           metadata: Json | null
           payment_method: string | null
+          platform_fee: number | null
           provider: string
           reference: string
           status: string
+          type: string
           updated_at: string
           user_agent: string | null
           user_id: string
@@ -574,9 +644,11 @@ export type Database = {
           ip_address?: string | null
           metadata?: Json | null
           payment_method?: string | null
+          platform_fee?: number | null
           provider: string
           reference: string
           status?: string
+          type?: string
           updated_at?: string
           user_agent?: string | null
           user_id: string
@@ -589,9 +661,11 @@ export type Database = {
           ip_address?: string | null
           metadata?: Json | null
           payment_method?: string | null
+          platform_fee?: number | null
           provider?: string
           reference?: string
           status?: string
+          type?: string
           updated_at?: string
           user_agent?: string | null
           user_id?: string
