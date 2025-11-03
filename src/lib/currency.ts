@@ -1,7 +1,7 @@
 // Currency conversion rates (USD as base)
 const CURRENCY_RATES: Record<string, { rate: number; symbol: string; code: string }> = {
   "United States": { rate: 1, symbol: "$", code: "USD" },
-  "Nigeria": { rate: 1650, symbol: "₦", code: "NGN" },
+  "Nigeria": { rate: 1452.66, symbol: "₦", code: "NGN" },
   "United Kingdom": { rate: 0.79, symbol: "£", code: "GBP" },
   "Canada": { rate: 1.36, symbol: "C$", code: "CAD" },
   "Australia": { rate: 1.53, symbol: "A$", code: "AUD" },
