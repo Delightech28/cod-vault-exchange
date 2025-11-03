@@ -56,6 +56,12 @@ serve(async (req) => {
       const email = profile?.email || user.email;
       const reference = `wallet_${user.id}_${Date.now()}`;
 
+      // Paystack primarily supports NGN - force NGN for all Paystack transactions
+      const paystackCurrency = 'NGN';
+      const amountInKobo = Math.round(amount * 100); // Convert to kobo
+
+      console.log('Initializing Paystack transaction:', { email, amount, amountInKobo, currency: paystackCurrency, reference });
+
       // Initialize Paystack transaction
       const paystackResponse = await fetch('https://api.paystack.co/transaction/initialize', {
         method: 'POST',
@@ -65,8 +71,8 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           email,
-          amount: Math.round(amount * 100), // Convert to kobo/cents
-          currency: currency || 'NGN',
+          amount: amountInKobo,
+          currency: paystackCurrency,
           reference,
           callback_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/paystack-webhook`,
           metadata: {
@@ -97,14 +103,15 @@ serve(async (req) => {
         .insert({
           user_id: user.id,
           amount,
-          currency: currency || 'NGN',
+          currency: paystackCurrency,
           provider: 'paystack',
           reference,
           status: 'pending',
           ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip'),
           user_agent: req.headers.get('user-agent'),
           metadata: {
-            authorization_url: paystackData.data.authorization_url
+            authorization_url: paystackData.data.authorization_url,
+            original_currency: currency
           }
         });
 

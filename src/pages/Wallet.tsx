@@ -63,7 +63,8 @@ export default function Wallet() {
     try {
       setLoading(true);
       const amount = parseFloat(addAmount);
-      const currency = userCountry === 'NG' ? 'NGN' : 'USD';
+      // Always use NGN for Paystack (primary supported currency)
+      const currency = 'NGN';
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -170,15 +171,15 @@ export default function Wallet() {
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
-                        <Label htmlFor="amount">Amount ({userCountry === 'NG' ? 'NGN' : 'USD'})</Label>
+                        <Label htmlFor="amount">Amount (NGN)</Label>
                         <Input
                           id="amount"
                           type="number"
                           placeholder="0.00"
                           value={addAmount}
                           onChange={(e) => setAddAmount(e.target.value)}
-                          min="10"
-                          step="0.01"
+                          min="1000"
+                          step="100"
                           disabled={loading}
                         />
                       </div>
@@ -186,30 +187,30 @@ export default function Wallet() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setAddAmount(userCountry === 'NG' ? '5000' : '50')}
+                          onClick={() => setAddAmount('5000')}
                           disabled={loading}
                         >
-                          {userCountry === 'NG' ? '₦5,000' : '$50'}
+                          ₦5,000
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setAddAmount(userCountry === 'NG' ? '10000' : '100')}
+                          onClick={() => setAddAmount('10000')}
                           disabled={loading}
                         >
-                          {userCountry === 'NG' ? '₦10,000' : '$100'}
+                          ₦10,000
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setAddAmount(userCountry === 'NG' ? '25000' : '250')}
+                          onClick={() => setAddAmount('25000')}
                           disabled={loading}
                         >
-                          {userCountry === 'NG' ? '₦25,000' : '$250'}
+                          ₦25,000
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground text-center">
-                        Minimum deposit: {userCountry === 'NG' ? '₦1,000' : '$10.00'}
+                        Minimum deposit: ₦1,000
                       </p>
                     </div>
                     <DialogFooter>
