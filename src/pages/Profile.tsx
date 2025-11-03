@@ -116,20 +116,21 @@ export default function Profile() {
       return;
     }
 
-    // Get public URL
+    // Get public URL with cache busting
     const { data: { publicUrl } } = supabase.storage
       .from('avatars')
       .getPublicUrl(filePath);
+    
+    const avatarUrlWithTimestamp = `${publicUrl}?t=${new Date().getTime()}`;
 
     // Update profile with explicit type casting
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ avatar_url: publicUrl } as any)
+      .update({ avatar_url: avatarUrlWithTimestamp } as any)
       .eq('user_id', user?.id);
 
-    setLoading(false);
-
     if (updateError) {
+      setLoading(false);
       toast({
         title: 'Error',
         description: updateError.message,
@@ -138,12 +139,16 @@ export default function Profile() {
       return;
     }
 
+    // Update local state immediately
+    setProfile(prev => prev ? { ...prev, avatar_url: avatarUrlWithTimestamp } : null);
+    setFormData(prev => ({ ...prev, avatar_url: avatarUrlWithTimestamp }));
+    
+    setLoading(false);
+
     toast({
       title: 'Success',
       description: 'Avatar updated successfully',
     });
-
-    checkAuthAndLoadProfile();
   };
 
   const handleSave = async () => {
