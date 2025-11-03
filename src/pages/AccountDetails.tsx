@@ -47,9 +47,22 @@ const AccountDetails = () => {
   const [userCountry, setUserCountry] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchUserCountry();
-    fetchAccountDetails();
+    const init = async () => {
+      await fetchUserCountry();
+      await fetchAccountDetails();
+    };
+    init();
   }, [id]);
+
+  useEffect(() => {
+    if (userCountry && account) {
+      // Recalculate formatted price when country changes
+      setAccount((prev: any) => ({
+        ...prev,
+        price: formatPrice(prev.priceAmount, userCountry)
+      }));
+    }
+  }, [userCountry]);
 
   const fetchUserCountry = async () => {
     const { data: { user } } = await supabase.auth.getUser();
