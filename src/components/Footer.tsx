@@ -6,9 +6,9 @@ const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           <div>
-            <Link to="/" className="flex items-center space-x-2 mb-4">
-              <div className="text-xl font-bold text-primary">COD</div>
-              <div className="text-xl font-bold text-foreground">Accounts</div>
+          <Link to="/" className="flex items-center space-x-2 mb-4">
+              <div className="text-xl font-bold text-primary">Trade</div>
+              <div className="text-xl font-bold text-foreground">Ops</div>
             </Link>
             <p className="text-muted-foreground text-sm">
               The most trusted marketplace for buying and selling Call of Duty accounts.
@@ -47,7 +47,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
-          <p>&copy; 2024 COD Accounts Marketplace. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} TradeOps Marketplace. All rights reserved.</p>
         </div>
       </div>
     </footer>

@@ -113,10 +113,66 @@ const AccountDetails = () => {
     }
   };
 
-  const handlePurchase = () => {
-    toast.success("Added to cart! Proceeding to checkout...", {
-      description: "You'll be redirected to secure payment",
-    });
+  const handlePurchase = async () => {
+    try {
+      // Check if user is logged in
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error("Please sign in to purchase", {
+          description: "You need to be logged in to make a purchase",
+        });
+        return;
+      }
+
+      // Check if trying to buy own listing
+      if (id?.startsWith("listing-")) {
+        const listingId = id.replace("listing-", "");
+        const { data: listing } = await supabase
+          .from("listings")
+          .select("seller_id, price")
+          .eq("id", listingId)
+          .single();
+
+        if (listing?.seller_id === user.id) {
+          toast.error("Cannot buy your own listing");
+          return;
+        }
+
+        // Create transaction
+        const { data: transaction, error } = await supabase
+          .from("transactions")
+          .insert({
+            listing_id: listingId,
+            buyer_id: user.id,
+            seller_id: listing.seller_id,
+            amount: listing.price,
+            platform_fee: listing.price * 0.1, // 10% platform fee
+            seller_payout: listing.price * 0.9,
+            status: "pending"
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        toast.success("Deal accepted! Transaction created", {
+          description: "Proceed to payment to complete the purchase",
+        });
+        
+        // Redirect to transactions page
+        window.location.href = "/transactions";
+      } else {
+        toast.success("Added to cart! Proceeding to checkout...", {
+          description: "You'll be redirected to secure payment",
+        });
+      }
+    } catch (error) {
+      console.error("Error creating transaction:", error);
+      toast.error("Failed to create transaction", {
+        description: "Please try again later",
+      });
+    }
   };
 
   const handleContact = () => {
@@ -266,7 +322,7 @@ const AccountDetails = () => {
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-6"
                   onClick={handlePurchase}
                 >
-                  Buy Now
+                  Accept Deal
                 </Button>
                 
                 <Button 

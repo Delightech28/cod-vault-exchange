@@ -9,7 +9,7 @@ const buyingSteps = [
   {
     icon: Search,
     title: "Browse & Select",
-    description: "Search through thousands of verified COD accounts with detailed stats and rankings.",
+    description: "Search through thousands of verified accounts with detailed stats and rankings.",
   },
   {
     icon: Shield,

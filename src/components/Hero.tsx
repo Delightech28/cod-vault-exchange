@@ -25,7 +25,7 @@ const Hero = () => {
             Buy & Sell <span className="text-primary">Call of Duty</span> Accounts
           </h1>
           <p className="text-xl text-muted-foreground mb-8">
-            Join the most trusted marketplace for COD accounts. Secure transactions, instant delivery, and verified sellers.
+            Join the most trusted marketplace for Call of Duty accounts. Secure transactions, instant delivery, and verified sellers.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 mb-8">

@@ -59,8 +59,8 @@ const Navigation = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to={user ? "/dashboard" : "/"} className="flex items-center space-x-2">
-            <div className="text-2xl font-bold text-primary">COD</div>
-            <div className="text-2xl font-bold text-foreground">Accounts</div>
+            <div className="text-2xl font-bold text-primary">Trade</div>
+            <div className="text-2xl font-bold text-foreground">Ops</div>
           </Link>
 
           {/* Desktop Navigation */}
