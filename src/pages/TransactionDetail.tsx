@@ -153,6 +153,14 @@ const TransactionDetail = () => {
 
       if (error) throw error;
       setMessages(data || []);
+
+      // Mark messages as read
+      if (currentUserId && id) {
+        await supabase.rpc('mark_messages_as_read', {
+          p_transaction_id: id,
+          p_user_id: currentUserId
+        });
+      }
     } catch (error) {
       console.error("Error fetching messages:", error);
     }

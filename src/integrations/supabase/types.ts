@@ -266,6 +266,7 @@ export type Database = {
           created_at: string
           id: string
           is_system_message: boolean | null
+          read_by: string[] | null
           sender_id: string
           transaction_id: string
         }
@@ -275,6 +276,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_system_message?: boolean | null
+          read_by?: string[] | null
           sender_id: string
           transaction_id: string
         }
@@ -284,6 +286,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_system_message?: boolean | null
+          read_by?: string[] | null
           sender_id?: string
           transaction_id?: string
         }
@@ -517,6 +520,10 @@ export type Database = {
         Returns: undefined
       }
       is_admin_or_moderator: { Args: { _user_id: string }; Returns: boolean }
+      mark_messages_as_read: {
+        Args: { p_transaction_id: string; p_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       account_type: "buyer" | "seller" | "both"

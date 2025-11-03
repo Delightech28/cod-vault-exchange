@@ -29,6 +29,30 @@ const Messages = () => {
     checkAuth();
   }, []);
 
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const channel = supabase
+      .channel('messages-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages'
+        },
+        () => {
+          // Refetch conversations when messages change
+          fetchConversations(currentUserId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId]);
+
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -54,7 +78,8 @@ const Messages = () => {
           messages (
             content,
             created_at,
-            sender_id
+            sender_id,
+            read_by
           )
         `)
         .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
@@ -67,7 +92,7 @@ const Messages = () => {
         
         const { data: profile } = await supabase
           .from("profiles")
-          .select("display_name, username")
+          .select("display_name, username, full_name")
           .eq("user_id", otherUserId)
           .maybeSingle();
 
@@ -75,12 +100,12 @@ const Messages = () => {
         const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
         
         const unreadMessages = messages.filter(
-          (msg: any) => msg.sender_id !== userId
+          (msg: any) => msg.sender_id !== userId && !(msg.read_by || []).includes(userId)
         );
 
         return {
           transaction_id: transaction.id,
-          other_user_name: profile?.display_name || profile?.username || "Anonymous",
+          other_user_name: profile?.display_name || profile?.full_name || profile?.username || "Anonymous",
           other_user_id: otherUserId,
           last_message: lastMessage?.content || "No messages yet",
           last_message_time: lastMessage?.created_at || transaction.created_at,
