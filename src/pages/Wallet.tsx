@@ -178,8 +178,8 @@ export default function Wallet() {
                           placeholder="0.00"
                           value={addAmount}
                           onChange={(e) => setAddAmount(e.target.value)}
-                          min="1000"
-                          step="100"
+                          min="50"
+                          step="10"
                           disabled={loading}
                         />
                       </div>
@@ -187,30 +187,30 @@ export default function Wallet() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setAddAmount('5000')}
+                          onClick={() => setAddAmount('50')}
                           disabled={loading}
                         >
-                          ₦5,000
+                          ₦50
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setAddAmount('10000')}
+                          onClick={() => setAddAmount('100')}
                           disabled={loading}
                         >
-                          ₦10,000
+                          ₦100
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setAddAmount('25000')}
+                          onClick={() => setAddAmount('500')}
                           disabled={loading}
                         >
-                          ₦25,000
+                          ₦500
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground text-center">
-                        Minimum deposit: ₦1,000
+                        Minimum deposit: ₦50
                       </p>
                     </div>
                     <DialogFooter>
