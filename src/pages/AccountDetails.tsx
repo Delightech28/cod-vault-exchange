@@ -42,6 +42,7 @@ const AccountDetails = () => {
   const { id } = useParams();
   const [account, setAccount] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [existingTransaction, setExistingTransaction] = useState<any>(null);
 
   useEffect(() => {
     fetchAccountDetails();
@@ -49,11 +50,9 @@ const AccountDetails = () => {
 
   const fetchAccountDetails = async () => {
     try {
-      // Check if it's a real listing (starts with "listing-")
       if (id?.startsWith("listing-")) {
         const listingId = id.replace("listing-", "");
         
-        // Increment view count
         await supabase.rpc("increment_listing_views", { listing_id: listingId });
         
         const { data, error } = await supabase
@@ -65,7 +64,6 @@ const AccountDetails = () => {
         if (error) throw error;
 
         if (data) {
-          // Fetch seller profile
           let sellerName = "Anonymous";
           if (data.seller_id) {
             const { data: profile } = await supabase
@@ -81,12 +79,14 @@ const AccountDetails = () => {
           
           setAccount({
             id: `listing-${data.id}`,
+            listingId: data.id,
             title: data.title,
             game: data.game_name,
             level: data.level ? `Level ${data.level}` : "N/A",
             rank: data.rank || "N/A",
             kd: data.kd_ratio || "N/A",
             price: `$${data.price}`,
+            priceAmount: data.price,
             verified: data.verified_at !== null,
             rating: 4.5,
             reviews: 0,
@@ -95,18 +95,30 @@ const AccountDetails = () => {
             wins: data.total_wins || "N/A",
             platform: "Cross-platform",
             seller: sellerName,
+            sellerId: data.seller_id,
             sellerRating: 4.5,
             features: data.items_included || [],
             viewsCount: data.views_count || 0,
           });
+
+          // Check for existing transaction
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: transactionData } = await supabase
+              .from("transactions")
+              .select("id")
+              .eq("listing_id", data.id)
+              .eq("buyer_id", user.id)
+              .maybeSingle();
+            
+            setExistingTransaction(transactionData);
+          }
         }
       } else {
-        // Use mock data
         setAccount(accountsData[id || "1"] || accountsData["1"]);
       }
     } catch (error) {
       console.error("Error fetching account details:", error);
-      // Fallback to mock data
       setAccount(accountsData[id || "1"] || accountsData["1"]);
     } finally {
       setIsLoading(false);
@@ -115,22 +127,18 @@ const AccountDetails = () => {
 
   const handlePurchase = async () => {
     try {
-      // Check if user is logged in
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        toast.error("Please sign in to purchase", {
-          description: "You need to be logged in to make a purchase",
-        });
+        toast.error("Please sign in to purchase");
         return;
       }
 
-      // Check if trying to buy own listing
       if (id?.startsWith("listing-")) {
         const listingId = id.replace("listing-", "");
         const { data: listing } = await supabase
           .from("listings")
-          .select("seller_id, price")
+          .select("seller_id, price, title")
           .eq("id", listingId)
           .single();
 
@@ -139,7 +147,14 @@ const AccountDetails = () => {
           return;
         }
 
-        // Create transaction
+        const { data: buyerProfile } = await supabase
+          .from("profiles")
+          .select("username, display_name")
+          .eq("user_id", user.id)
+          .single();
+
+        const buyerName = buyerProfile?.display_name || buyerProfile?.username || "Someone";
+
         const { data: transaction, error } = await supabase
           .from("transactions")
           .insert({
@@ -147,7 +162,7 @@ const AccountDetails = () => {
             buyer_id: user.id,
             seller_id: listing.seller_id,
             amount: listing.price,
-            platform_fee: listing.price * 0.1, // 10% platform fee
+            platform_fee: listing.price * 0.1,
             seller_payout: listing.price * 0.9,
             status: "pending"
           })
@@ -156,22 +171,23 @@ const AccountDetails = () => {
 
         if (error) throw error;
 
-        toast.success("Deal accepted! Transaction created", {
-          description: "Proceed to payment to complete the purchase",
+        await supabase.from("notifications").insert({
+          user_id: listing.seller_id,
+          title: "New Pending Order",
+          message: `You have a new pending order from ${buyerName} for "${listing.title}"`,
+          type: "new_order",
+          related_id: transaction.id
         });
+
+        toast.success("Order created! Redirecting...");
         
-        // Redirect to transactions page
-        window.location.href = "/transactions";
-      } else {
-        toast.success("Added to cart! Proceeding to checkout...", {
-          description: "You'll be redirected to secure payment",
-        });
+        setTimeout(() => {
+          window.location.href = `/transaction/${transaction.id}`;
+        }, 1000);
       }
     } catch (error) {
       console.error("Error creating transaction:", error);
-      toast.error("Failed to create transaction", {
-        description: "Please try again later",
-      });
+      toast.error("Failed to create transaction");
     }
   };
 
@@ -318,13 +334,23 @@ const AccountDetails = () => {
                   <div className="text-sm text-muted-foreground">One-time payment</div>
                 </div>
 
-                <Button 
-                  variant="outline" 
-                  className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                  onClick={handleContact}
-                >
-                  Contact Seller
-                </Button>
+                {existingTransaction ? (
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                    onClick={() => window.location.href = `/transaction/${existingTransaction.id}`}
+                  >
+                    Message Seller
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                    onClick={handlePurchase}
+                  >
+                    Buy Now
+                  </Button>
+                )}
 
                 <Separator />
 

@@ -259,6 +259,77 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          attachment_url: string | null
+          content: string
+          created_at: string
+          id: string
+          is_system_message: boolean | null
+          sender_id: string
+          transaction_id: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          is_system_message?: boolean | null
+          sender_id: string
+          transaction_id: string
+        }
+        Update: {
+          attachment_url?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_system_message?: boolean | null
+          sender_id?: string
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          related_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          related_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          related_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           account_type: Database["public"]["Enums"]["account_type"] | null
@@ -282,6 +353,7 @@ export type Database = {
           updated_at: string
           user_id: string
           username: string | null
+          wallet_balance: number | null
         }
         Insert: {
           account_type?: Database["public"]["Enums"]["account_type"] | null
@@ -305,6 +377,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           username?: string | null
+          wallet_balance?: number | null
         }
         Update: {
           account_type?: Database["public"]["Enums"]["account_type"] | null
@@ -328,11 +401,13 @@ export type Database = {
           updated_at?: string
           user_id?: string
           username?: string | null
+          wallet_balance?: number | null
         }
         Relationships: []
       }
       transactions: {
         Row: {
+          acceptance_deadline: string | null
           amount: number
           auto_release_at: string | null
           buyer_id: string
@@ -353,6 +428,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          acceptance_deadline?: string | null
           amount: number
           auto_release_at?: string | null
           buyer_id: string
@@ -373,6 +449,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          acceptance_deadline?: string | null
           amount?: number
           auto_release_at?: string | null
           buyer_id?: string

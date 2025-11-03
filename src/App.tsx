@@ -15,6 +15,8 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Wallet from "./pages/Wallet";
 import Transactions from "./pages/Transactions";
+import TransactionDetail from "./pages/TransactionDetail";
+import Notifications from "./pages/Notifications";
 import MyListings from "./pages/MyListings";
 import NotFound from "./pages/NotFound";
 
@@ -39,6 +41,8 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/wallet" element={<Wallet />} />
           <Route path="/transactions" element={<Transactions />} />
+          <Route path="/transaction/:id" element={<TransactionDetail />} />
+          <Route path="/notifications" element={<Notifications />} />
           <Route path="/my-listings" element={<MyListings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

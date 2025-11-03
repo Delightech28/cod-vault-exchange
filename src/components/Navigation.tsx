@@ -17,6 +17,7 @@ const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     // Check initial auth state
@@ -24,6 +25,7 @@ const Navigation = () => {
       setUser(user);
       if (user) {
         fetchProfile(user.id);
+        fetchUnreadNotifications(user.id);
       }
     });
 
@@ -32,13 +34,39 @@ const Navigation = () => {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+        fetchUnreadNotifications(session.user.id);
       } else {
         setProfile(null);
+        setUnreadCount(0);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Setup realtime subscription for notifications
+    const channel = supabase
+      .channel('notification-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications'
+        },
+        () => {
+          fetchUnreadNotifications(user.id);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -47,6 +75,15 @@ const Navigation = () => {
       .eq('user_id', userId)
       .single();
     setProfile(data);
+  };
+
+  const fetchUnreadNotifications = async (userId: string) => {
+    const { data } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('is_read', false);
+    setUnreadCount(data?.length || 0);
   };
 
   const handleSignOut = async () => {
@@ -79,10 +116,14 @@ const Navigation = () => {
               </div>
 
               <div className="hidden md:flex items-center space-x-4">
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute top-1 right-1 h-2 w-2 bg-destructive rounded-full" />
-                </Button>
+                <Link to="/notifications">
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 h-2 w-2 bg-destructive rounded-full" />
+                    )}
+                  </Button>
+                </Link>
                 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -164,10 +205,14 @@ const Navigation = () => {
           <div className="md:hidden flex items-center space-x-3">
             {user ? (
               <>
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute top-1 right-1 h-2 w-2 bg-destructive rounded-full" />
-                </Button>
+                <Link to="/notifications">
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 h-2 w-2 bg-destructive rounded-full" />
+                    )}
+                  </Button>
+                </Link>
                 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

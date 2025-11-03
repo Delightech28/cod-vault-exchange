@@ -238,9 +238,9 @@ export default function Transactions() {
                             )}
 
                             {transaction.listings && (
-                              <Link to={`/account/listing-${transaction.listings.id}`}>
+                              <Link to={`/transaction/${transaction.id}`}>
                                 <Button variant="outline" size="sm">
-                                  View Listing
+                                  View Details
                                 </Button>
                               </Link>
                             )}
