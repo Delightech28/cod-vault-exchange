@@ -101,14 +101,15 @@ const AccountDetails = () => {
             viewsCount: data.views_count || 0,
           });
 
-          // Check for existing transaction
+          // Check for existing transaction with payment completed
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
             const { data: transactionData } = await supabase
               .from("transactions")
-              .select("id")
+              .select("id, status")
               .eq("listing_id", data.id)
               .eq("buyer_id", user.id)
+              .in("status", ["escrow_held", "delivered", "completed"])
               .maybeSingle();
             
             setExistingTransaction(transactionData);
