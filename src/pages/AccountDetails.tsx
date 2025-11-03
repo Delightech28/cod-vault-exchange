@@ -9,6 +9,7 @@ import { Shield, Star, ArrowLeft, User, Trophy, Target, Clock } from "lucide-rea
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { formatPrice, getCurrencyInfo } from "@/lib/currency";
 
 const accountsData: Record<string, any> = {
   "1": {
@@ -43,10 +44,27 @@ const AccountDetails = () => {
   const [account, setAccount] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [existingTransaction, setExistingTransaction] = useState<any>(null);
+  const [userCountry, setUserCountry] = useState<string | null>(null);
 
   useEffect(() => {
+    fetchUserCountry();
     fetchAccountDetails();
   }, [id]);
+
+  const fetchUserCountry = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("country")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      if (profile?.country) {
+        setUserCountry(profile.country);
+      }
+    }
+  };
 
   const fetchAccountDetails = async () => {
     try {
@@ -83,7 +101,7 @@ const AccountDetails = () => {
             level: data.level ? `Level ${data.level}` : "N/A",
             rank: data.rank || "N/A",
             kd: data.kd_ratio || "N/A",
-            price: `$${data.price}`,
+            price: formatPrice(data.price, userCountry),
             priceAmount: data.price,
             verified: data.verified_at !== null,
             rating: 4.5,
@@ -161,8 +179,8 @@ const AccountDetails = () => {
             buyer_id: user.id,
             seller_id: listing.seller_id,
             amount: listing.price,
-            platform_fee: listing.price * 0.1,
-            seller_payout: listing.price * 0.9,
+            platform_fee: listing.price * 0.05,
+            seller_payout: listing.price * 0.95,
             status: "pending"
           })
           .select()

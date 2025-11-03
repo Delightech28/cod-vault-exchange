@@ -15,16 +15,34 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { formatPrice } from "@/lib/currency";
 
 const Marketplace = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [gameFilter, setGameFilter] = useState("all");
   const [realListings, setRealListings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [userCountry, setUserCountry] = useState<string | null>(null);
 
   useEffect(() => {
+    fetchUserCountry();
     fetchListings();
   }, []);
+
+  const fetchUserCountry = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("country")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      if (profile?.country) {
+        setUserCountry(profile.country);
+      }
+    }
+  };
 
   const fetchListings = async () => {
     try {
@@ -51,7 +69,7 @@ const Marketplace = () => {
     game: listing.game_name,
     level: listing.rank || `Level ${listing.level || 0}`,
     kd: listing.kd_ratio || "N/A",
-    price: `$${listing.price}`,
+    price: formatPrice(listing.price, userCountry),
     verified: listing.verified_at !== null,
     rating: 4.5,
     reviews: 0,

@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { formatPrice, getCurrencyInfo } from "@/lib/currency";
 
 interface Transaction {
   id: string;
@@ -61,6 +62,7 @@ const TransactionDetail = () => {
   const [disputeReason, setDisputeReason] = useState("");
   const [disputeDescription, setDisputeDescription] = useState("");
   const [timeRemaining, setTimeRemaining] = useState("");
+  const [userCountry, setUserCountry] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -96,6 +98,18 @@ const TransactionDetail = () => {
       return;
     }
     setCurrentUserId(user.id);
+    
+    // Fetch user country
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("country")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    
+    if (profile?.country) {
+      setUserCountry(profile.country);
+    }
+    
     fetchTransaction();
     fetchMessages();
   };
@@ -409,16 +423,16 @@ const TransactionDetail = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Item Price</span>
-                      <span className="font-medium">${transaction.amount}</span>
+                      <span className="font-medium">{formatPrice(transaction.amount, userCountry)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Platform Fee (10%)</span>
-                      <span className="font-medium">${transaction.platform_fee}</span>
+                      <span className="text-muted-foreground">Platform Fee (5%)</span>
+                      <span className="font-medium">{formatPrice(transaction.platform_fee, userCountry)}</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between text-lg font-bold">
                       <span>Total</span>
-                      <span>${transaction.amount}</span>
+                      <span>{formatPrice(transaction.amount, userCountry)}</span>
                     </div>
                   </div>
                 </div>
@@ -448,7 +462,7 @@ const TransactionDetail = () => {
                   {transaction.status === "pending" && isBuyer && (
                     <Button onClick={handlePayment} className="flex-1">
                       <Wallet className="mr-2 h-4 w-4" />
-                      Pay ${transaction.amount}
+                      Pay {formatPrice(transaction.amount, userCountry)}
                     </Button>
                   )}
 
