@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Star, Search, Filter } from "lucide-react";
+import { Shield, Star, Search, Filter, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -55,6 +55,7 @@ const Marketplace = () => {
     verified: listing.verified_at !== null,
     rating: 4.5,
     reviews: 0,
+    views: listing.views_count || 0,
   }));
 
   const filteredAccounts = allAccounts.filter((account) => {
@@ -128,9 +129,15 @@ const Marketplace = () => {
                     <Badge variant="secondary" className="text-xs">
                       {account.game}
                     </Badge>
-                    {account.verified && (
-                      <Shield className="h-4 w-4 text-primary" />
-                    )}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Eye className="h-3 w-3" />
+                        <span>{account.views}</span>
+                      </div>
+                      {account.verified && (
+                        <Shield className="h-4 w-4 text-primary" />
+                      )}
+                    </div>
                   </div>
                   <h3 className="text-xl font-bold group-hover:text-primary transition-colors">
                     {account.title}
