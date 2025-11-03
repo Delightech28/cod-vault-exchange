@@ -11,10 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import { Wallet as WalletIcon, Plus, Download, ArrowUpRight, ArrowDownLeft, AlertCircle } from 'lucide-react';
+import { formatPrice } from '@/lib/currency';
 
 export default function Wallet() {
   const [loading, setLoading] = useState(true);
-  const [balance] = useState(0); // Demo balance
+  const [balance, setBalance] = useState(0);
+  const [userCountry, setUserCountry] = useState<string | null>(null);
   const [addAmount, setAddAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const navigate = useNavigate();
@@ -29,6 +31,18 @@ export default function Wallet() {
     if (!user) {
       navigate('/auth');
       return;
+    }
+
+    // Fetch wallet balance and country
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('wallet_balance, country')
+      .eq('user_id', user.id)
+      .single();
+
+    if (profile) {
+      setBalance(Number(profile.wallet_balance) || 0);
+      setUserCountry(profile.country);
     }
 
     setLoading(false);
@@ -76,7 +90,7 @@ export default function Wallet() {
                   <span className="text-sm font-medium text-muted-foreground">Available Balance</span>
                 </div>
               </div>
-              <div className="text-4xl font-bold mb-6">${balance.toFixed(2)}</div>
+              <div className="text-4xl font-bold mb-6">{formatPrice(balance, userCountry)}</div>
               <div className="flex gap-3">
                 <Dialog>
                   <DialogTrigger asChild>
@@ -165,7 +179,7 @@ export default function Wallet() {
                           step="0.01"
                         />
                         <p className="text-xs text-muted-foreground">
-                          Available: ${balance.toFixed(2)}
+                          Available: {formatPrice(balance, userCountry)}
                         </p>
                       </div>
                       <Button onClick={handleWithdraw} className="w-full" disabled={balance === 0}>

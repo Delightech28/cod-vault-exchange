@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Wallet, TrendingUp, Shield, MessageSquare, ShoppingBag, Plus, Download, AlertCircle } from 'lucide-react';
+import { formatPrice } from '@/lib/currency';
 
 interface Profile {
   username: string;
@@ -14,6 +15,8 @@ interface Profile {
   account_type: 'buyer' | 'seller' | 'both';
   kyc_status: string;
   is_verified_seller: boolean;
+  wallet_balance: number;
+  country: string;
 }
 
 export default function Dashboard() {
@@ -36,7 +39,7 @@ export default function Dashboard() {
     // Fetch profile
     const { data: profileData } = await supabase
       .from('profiles')
-      .select('username, display_name, account_type, kyc_status, is_verified_seller, onboarding_completed')
+      .select('username, display_name, account_type, kyc_status, is_verified_seller, onboarding_completed, wallet_balance, country')
       .eq('user_id', user.id)
       .single();
 
@@ -92,18 +95,22 @@ export default function Dashboard() {
               <Wallet className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$0.00</div>
+              <div className="text-2xl font-bold">{formatPrice(profile?.wallet_balance || 0, profile?.country)}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 Available balance
               </p>
               <div className="flex gap-2 mt-4">
-                <Button size="sm" className="flex-1">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Funds
+                <Button size="sm" className="flex-1" asChild>
+                  <Link to="/wallet">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Funds
+                  </Link>
                 </Button>
-                <Button size="sm" variant="outline" className="flex-1">
-                  <Download className="h-4 w-4 mr-1" />
-                  Withdraw
+                <Button size="sm" variant="outline" className="flex-1" asChild>
+                  <Link to="/wallet">
+                    <Download className="h-4 w-4 mr-1" />
+                    Withdraw
+                  </Link>
                 </Button>
               </div>
               <Link to="/wallet" className="text-xs text-primary hover:underline block mt-2">

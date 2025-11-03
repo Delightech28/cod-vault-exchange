@@ -52,7 +52,7 @@ export function PaymentConfirmationModal({
       fetchSellerInfo();
       getCurrentUser();
     }
-  }, [open]);
+  }, [open, transaction.seller_id]);
 
   const getCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -77,14 +77,23 @@ export function PaymentConfirmationModal({
   };
 
   const fetchSellerInfo = async () => {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("username, display_name, full_name")
-      .eq("user_id", transaction.seller_id)
-      .single();
+    try {
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("username, display_name, full_name")
+        .eq("user_id", transaction.seller_id)
+        .maybeSingle();
 
-    if (profile) {
-      setSellerUsername(profile.display_name || profile.full_name || profile.username || "Seller");
+      if (error) {
+        console.error("Error fetching seller:", error);
+        return;
+      }
+
+      if (profile) {
+        setSellerUsername(profile.display_name || profile.full_name || profile.username || "Seller");
+      }
+    } catch (err) {
+      console.error("Fetch seller error:", err);
     }
   };
 
