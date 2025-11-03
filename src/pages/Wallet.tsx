@@ -209,7 +209,12 @@ export default function Wallet() {
                   <span className="text-sm font-medium text-muted-foreground">Available Balance</span>
                 </div>
               </div>
-              <div className="text-4xl font-bold mb-6">{formatPrice(balance, userCountry)}</div>
+              <div className="text-4xl font-bold mb-6">
+                ₦{balance.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}
+              </div>
               <div className="flex gap-3">
                 <Dialog open={showAddFunds} onOpenChange={setShowAddFunds}>
                   <DialogTrigger asChild>
