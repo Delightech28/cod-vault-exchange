@@ -41,11 +41,11 @@ Deno.serve(async (req) => {
     console.log('Processing withdrawal for user:', user.id);
 
     // Parse request body
-    const { amount, bank_code, account_number } = await req.json();
+    const { amount, bank_code, account_number, account_name } = await req.json();
 
-    if (!amount || !bank_code || !account_number) {
+    if (!amount || !bank_code || !account_number || !account_name) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: amount, bank_code, account_number' }),
+        JSON.stringify({ error: 'Missing required fields: amount, bank_code, account_number, account_name' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         type: 'nuban',
-        name: profile.email,
+        name: account_name,
         account_number: account_number,
         bank_code: bank_code,
         currency: 'NGN',
@@ -193,6 +193,7 @@ Deno.serve(async (req) => {
           transfer_code: transferData.data.transfer_code,
           bank_code: bank_code,
           account_number: account_number,
+          account_name: account_name,
         },
       })
       .select()

@@ -14,6 +14,11 @@ import { toast } from '@/hooks/use-toast';
 import { Wallet as WalletIcon, Plus, Download, ArrowUpRight, ArrowDownLeft, AlertCircle } from 'lucide-react';
 import { formatPrice } from '@/lib/currency';
 
+interface Bank {
+  name: string;
+  code: string;
+}
+
 export default function Wallet() {
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState(0);
@@ -22,6 +27,9 @@ export default function Wallet() {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [bankCode, setBankCode] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [banks, setBanks] = useState<Bank[]>([]);
+  const [verifyingAccount, setVerifyingAccount] = useState(false);
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
@@ -29,6 +37,7 @@ export default function Wallet() {
 
   useEffect(() => {
     checkAuth();
+    loadBanks();
     
     // Check if user returned from payment
     const urlParams = new URLSearchParams(window.location.search);
@@ -54,6 +63,61 @@ export default function Wallet() {
       window.history.replaceState({}, '', '/wallet');
     }
   }, []);
+
+  const loadBanks = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-banks');
+      
+      if (error) throw error;
+      
+      if (data?.status && data?.data) {
+        setBanks(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading banks:', error);
+    }
+  };
+
+  const verifyAccount = async (accountNum: string, bankCd: string) => {
+    if (accountNum.length !== 10 || !bankCd) return;
+
+    try {
+      setVerifyingAccount(true);
+      setAccountName('');
+
+      const { data, error } = await supabase.functions.invoke('resolve-account', {
+        body: {
+          account_number: accountNum,
+          bank_code: bankCd,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.status && data?.account_name) {
+        setAccountName(data.account_name);
+        toast({
+          title: "Account Verified",
+          description: `✅ ${data.account_name}`,
+        });
+      } else {
+        toast({
+          title: "Verification Failed",
+          description: data?.message || "Cannot resolve account details",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('Account verification error:', error);
+      toast({
+        title: "Verification Error",
+        description: error.message || "Failed to verify account",
+        variant: "destructive",
+      });
+    } finally {
+      setVerifyingAccount(false);
+    }
+  };
 
   const verifyPayment = async (reference: string) => {
     try {
@@ -228,6 +292,7 @@ export default function Wallet() {
           amount,
           bank_code: bankCode,
           account_number: accountNumber,
+          account_name: accountName,
         },
         headers: {
           Authorization: `Bearer ${session.access_token}`
@@ -251,6 +316,7 @@ export default function Wallet() {
       setWithdrawAmount('');
       setBankCode('');
       setAccountNumber('');
+      setAccountName('');
       setShowWithdraw(false);
 
       // Refresh balance
@@ -415,18 +481,27 @@ export default function Wallet() {
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="bank-code">Bank Code</Label>
-                        <Input
+                        <Label htmlFor="bank-code">Select Bank</Label>
+                        <select
                           id="bank-code"
-                          type="text"
-                          placeholder="e.g. 058 for GTBank"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           value={bankCode}
-                          onChange={(e) => setBankCode(e.target.value)}
-                          disabled={withdrawing}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Enter your bank's code (e.g., 058 for GTBank, 044 for Access Bank)
-                        </p>
+                          onChange={(e) => {
+                            setBankCode(e.target.value);
+                            setAccountName('');
+                            if (accountNumber.length === 10) {
+                              verifyAccount(accountNumber, e.target.value);
+                            }
+                          }}
+                          disabled={withdrawing || verifyingAccount}
+                        >
+                          <option value="">-- Select Bank --</option>
+                          {banks.map((bank) => (
+                            <option key={bank.code} value={bank.code}>
+                              {bank.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <div className="space-y-2">
@@ -436,10 +511,29 @@ export default function Wallet() {
                           type="text"
                           placeholder="0123456789"
                           value={accountNumber}
-                          onChange={(e) => setAccountNumber(e.target.value)}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                            setAccountNumber(value);
+                            setAccountName('');
+                            if (value.length === 10 && bankCode) {
+                              verifyAccount(value, bankCode);
+                            }
+                          }}
                           maxLength={10}
-                          disabled={withdrawing}
+                          disabled={withdrawing || verifyingAccount}
                         />
+                        {verifyingAccount && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-2">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Verifying account...
+                          </p>
+                        )}
+                        {accountName && (
+                          <p className="text-xs text-green-600 flex items-center gap-1">
+                            <span>✅</span>
+                            <span className="font-medium">{accountName}</span>
+                          </p>
+                        )}
                       </div>
 
                       {withdrawAmount && parseFloat(withdrawAmount) > 0 && (
@@ -469,7 +563,7 @@ export default function Wallet() {
                       </Button>
                       <Button 
                         onClick={handleWithdraw} 
-                        disabled={withdrawing || balance === 0 || !withdrawAmount || !bankCode || !accountNumber}
+                        disabled={withdrawing || balance === 0 || !withdrawAmount || !bankCode || !accountNumber || !accountName || verifyingAccount}
                       >
                         {withdrawing ? (
                           <>

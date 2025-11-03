@@ -2,3 +2,9 @@ project_id = "jwgrfufyogtfoudgtlmm"
 
 [functions.paystack-webhook]
 verify_jwt = false
+
+[functions.get-banks]
+verify_jwt = true
+
+[functions.resolve-account]
+verify_jwt = true
