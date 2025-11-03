@@ -622,6 +622,10 @@ export type Database = {
         Args: { listing_id: string }
         Returns: undefined
       }
+      increment_wallet_balance: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: undefined
+      }
       is_admin_or_moderator: { Args: { _user_id: string }; Returns: boolean }
       mark_messages_as_read: {
         Args: { p_transaction_id: string; p_user_id: string }

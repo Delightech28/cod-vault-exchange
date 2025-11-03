@@ -87,7 +87,7 @@ serve(async (req) => {
       throw new Error('Failed to update transaction');
     }
 
-    // Credit user's wallet
+    // Credit user's wallet using transaction-safe function
     const { error: updateBalanceError } = await supabase.rpc(
       'increment_wallet_balance',
       { 
@@ -96,28 +96,9 @@ serve(async (req) => {
       }
     );
 
-    // If the function doesn't exist, use direct update
-    if (updateBalanceError && updateBalanceError.code === '42883') {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('wallet_balance')
-        .eq('user_id', transaction.user_id)
-        .single();
-
-      const newBalance = (parseFloat(profile?.wallet_balance || '0') + amountInNaira);
-
-      const { error: directUpdateError } = await supabase
-        .from('profiles')
-        .update({ wallet_balance: newBalance })
-        .eq('user_id', transaction.user_id);
-
-      if (directUpdateError) {
-        console.error('Failed to update wallet balance:', directUpdateError);
-        throw new Error('Failed to update wallet balance');
-      }
-    } else if (updateBalanceError) {
+    if (updateBalanceError) {
       console.error('Failed to credit wallet:', updateBalanceError);
-      throw new Error('Failed to credit wallet');
+      throw new Error(`Failed to credit wallet: ${updateBalanceError.message}`);
     }
 
     // Create notification
