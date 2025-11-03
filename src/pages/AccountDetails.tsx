@@ -63,17 +63,17 @@ const AccountDetails = () => {
 
         if (error) throw error;
 
-        if (data) {
+          if (data) {
           let sellerName = "Anonymous";
           if (data.seller_id) {
             const { data: profile } = await supabase
               .from("profiles")
-              .select("username, display_name")
+              .select("username, display_name, full_name")
               .eq("user_id", data.seller_id)
               .maybeSingle();
             
             if (profile) {
-              sellerName = profile.display_name || profile.username || "Anonymous";
+              sellerName = profile.display_name || profile.full_name || profile.username || "Anonymous";
             }
           }
           

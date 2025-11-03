@@ -18,6 +18,7 @@ const Navigation = () => {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   useEffect(() => {
     // Check initial auth state
@@ -26,6 +27,7 @@ const Navigation = () => {
       if (user) {
         fetchProfile(user.id);
         fetchUnreadNotifications(user.id);
+        fetchUnreadMessages(user.id);
       }
     });
 
@@ -35,9 +37,11 @@ const Navigation = () => {
       if (session?.user) {
         fetchProfile(session.user.id);
         fetchUnreadNotifications(session.user.id);
+        fetchUnreadMessages(session.user.id);
       } else {
         setProfile(null);
         setUnreadCount(0);
+        setUnreadMessages(0);
       }
     });
 
@@ -48,7 +52,7 @@ const Navigation = () => {
     if (!user) return;
 
     // Setup realtime subscription for notifications
-    const channel = supabase
+    const notificationChannel = supabase
       .channel('notification-updates')
       .on(
         'postgres_changes',
@@ -63,8 +67,25 @@ const Navigation = () => {
       )
       .subscribe();
 
+    // Setup realtime subscription for messages
+    const messagesChannel = supabase
+      .channel('messages-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages'
+        },
+        () => {
+          fetchUnreadMessages(user.id);
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(notificationChannel);
+      supabase.removeChannel(messagesChannel);
     };
   }, [user]);
 
@@ -84,6 +105,34 @@ const Navigation = () => {
       .eq('user_id', userId)
       .eq('is_read', false);
     setUnreadCount(data?.length || 0);
+  };
+
+  const fetchUnreadMessages = async (userId: string) => {
+    try {
+      const { data: transactions } = await supabase
+        .from('transactions')
+        .select(`
+          id,
+          buyer_id,
+          seller_id,
+          messages (
+            sender_id
+          )
+        `)
+        .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`);
+
+      let totalUnread = 0;
+      transactions?.forEach((transaction: any) => {
+        const unreadInTransaction = transaction.messages?.filter(
+          (msg: any) => msg.sender_id !== userId
+        ).length || 0;
+        totalUnread += unreadInTransaction;
+      });
+
+      setUnreadMessages(totalUnread);
+    } catch (error) {
+      console.error('Error fetching unread messages:', error);
+    }
   };
 
   const handleSignOut = async () => {
@@ -124,9 +173,12 @@ const Navigation = () => {
                     )}
                   </Button>
                 </Link>
-                <Link to="/transactions">
-                  <Button variant="ghost" size="icon">
+                <Link to="/messages">
+                  <Button variant="ghost" size="icon" className="relative">
                     <MessageCircle className="h-5 w-5" />
+                    {unreadMessages > 0 && (
+                      <span className="absolute top-1 right-1 h-2 w-2 bg-destructive rounded-full" />
+                    )}
                   </Button>
                 </Link>
                 
@@ -218,9 +270,12 @@ const Navigation = () => {
                     )}
                   </Button>
                 </Link>
-                <Link to="/transactions">
-                  <Button variant="ghost" size="icon">
+                <Link to="/messages">
+                  <Button variant="ghost" size="icon" className="relative">
                     <MessageCircle className="h-5 w-5" />
+                    {unreadMessages > 0 && (
+                      <span className="absolute top-1 right-1 h-2 w-2 bg-destructive rounded-full" />
+                    )}
                   </Button>
                 </Link>
                 

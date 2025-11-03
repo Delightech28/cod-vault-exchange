@@ -1,9 +1,26 @@
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-cod.jpg";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Hero = () => {
+  const navigate = useNavigate();
+
+  const handleSellClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast.error("Please sign in to sell your account");
+      navigate("/auth");
+      return;
+    }
+    
+    navigate("/sell");
+  };
+
   return (
     <section className="relative min-h-[600px] flex items-center overflow-hidden">
       {/* Background Image with Overlay */}
@@ -34,11 +51,14 @@ const Hero = () => {
                 Browse Accounts
               </Button>
             </Link>
-            <Link to="/sell">
-              <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
-                Sell Your Account
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+              onClick={handleSellClick}
+            >
+              Sell Your Account
+            </Button>
           </div>
 
           {/* Search Bar */}

@@ -18,6 +18,7 @@ import Transactions from "./pages/Transactions";
 import TransactionDetail from "./pages/TransactionDetail";
 import Notifications from "./pages/Notifications";
 import MyListings from "./pages/MyListings";
+import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/transaction/:id" element={<TransactionDetail />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/my-listings" element={<MyListings />} />
+          <Route path="/messages" element={<Messages />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
