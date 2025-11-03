@@ -49,20 +49,28 @@ const AccountDetails = () => {
   useEffect(() => {
     const init = async () => {
       await fetchUserCountry();
-      await fetchAccountDetails();
     };
     init();
-  }, [id]);
+  }, []);
 
   useEffect(() => {
-    if (userCountry && account) {
-      // Recalculate formatted price when country changes
-      setAccount((prev: any) => ({
-        ...prev,
-        price: formatPrice(prev.priceAmount, userCountry)
-      }));
+    if (userCountry !== null) {
+      fetchAccountDetails();
     }
-  }, [userCountry]);
+  }, [id, userCountry]);
+
+  useEffect(() => {
+    if (userCountry && account && account.priceAmount) {
+      // Update formatted price when country changes
+      const newFormattedPrice = formatPrice(account.priceAmount, userCountry);
+      if (newFormattedPrice !== account.price) {
+        setAccount((prev: any) => ({
+          ...prev,
+          price: newFormattedPrice
+        }));
+      }
+    }
+  }, [userCountry, account?.priceAmount]);
 
   const fetchUserCountry = async () => {
     const { data: { user } } = await supabase.auth.getUser();

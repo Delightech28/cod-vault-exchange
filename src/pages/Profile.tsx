@@ -148,9 +148,6 @@ export default function Profile() {
                     <Badge variant="secondary">
                       {profile.account_type?.charAt(0).toUpperCase() + profile.account_type?.slice(1)}
                     </Badge>
-                    <Badge variant={profile.phone_verified ? 'default' : 'secondary'}>
-                      {profile.phone_verified ? '✓ Phone Verified' : 'Phone Not Verified'}
-                    </Badge>
                     <Badge variant={profile.email_verified ? 'default' : 'secondary'}>
                       {profile.email_verified ? '✓ Email Verified' : 'Email Not Verified'}
                     </Badge>
