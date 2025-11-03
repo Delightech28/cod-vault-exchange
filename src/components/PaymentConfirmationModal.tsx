@@ -269,7 +269,10 @@ export function PaymentConfirmationModal({
                         <span>Pay from Wallet</span>
                       </div>
                       <span className="text-sm text-muted-foreground">
-                        Balance: {formatPrice(walletBalance, userCountry)}
+                        Balance: ₦{walletBalance.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })}
                       </span>
                     </div>
                   </Label>
@@ -298,7 +301,10 @@ export function PaymentConfirmationModal({
                     Insufficient Balance
                   </p>
                   <p className="text-sm text-amber-800 dark:text-amber-200 mt-1">
-                    You need {formatPrice(transaction.amount - walletBalance, userCountry)} more to complete this payment.
+                    You need ₦{(transaction.amount - walletBalance).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                    })} more to complete this payment.
                   </p>
                 </div>
               </div>
