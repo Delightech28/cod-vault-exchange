@@ -48,6 +48,7 @@ interface Message {
   sender_id: string;
   is_system_message: boolean;
   created_at: string;
+  attachment_url: string | null;
 }
 
 const TransactionDetail = () => {
@@ -65,6 +66,8 @@ const TransactionDetail = () => {
   const [timeRemaining, setTimeRemaining] = useState("");
   const [userCountry, setUserCountry] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -183,21 +186,48 @@ const TransactionDetail = () => {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && !selectedFile) return;
+
+    setIsUploading(true);
+    let attachmentUrl = null;
 
     try {
+      // Upload file if selected
+      if (selectedFile) {
+        const fileExt = selectedFile.name.split('.').pop();
+        const fileName = `${currentUserId}/${id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('transaction-attachments')
+          .upload(fileName, selectedFile);
+
+        if (uploadError) throw uploadError;
+
+        // Get signed URL (valid for 1 year)
+        const { data: signedUrlData, error: urlError } = await supabase.storage
+          .from('transaction-attachments')
+          .createSignedUrl(fileName, 31536000);
+
+        if (urlError) throw urlError;
+
+        attachmentUrl = signedUrlData.signedUrl;
+      }
+
+      // Send message
       const { error } = await supabase
         .from("messages")
         .insert({
           transaction_id: id,
           sender_id: currentUserId,
-          content: newMessage,
-          is_system_message: false
+          content: newMessage.trim() || "📎 Sent an attachment",
+          is_system_message: false,
+          attachment_url: attachmentUrl
         });
 
       if (error) throw error;
 
       setNewMessage("");
+      setSelectedFile(null);
       
       // Send notification to other party
       const recipientId = transaction?.buyer_id === currentUserId 
@@ -216,6 +246,20 @@ const TransactionDetail = () => {
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("File size must be less than 10MB");
+        return;
+      }
+      setSelectedFile(file);
     }
   };
 
@@ -475,7 +519,29 @@ const TransactionDetail = () => {
                             : "bg-muted max-w-[80%]"
                         }`}
                       >
-                        <p className="text-sm">{msg.content}</p>
+                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        {msg.attachment_url && (
+                          <div className="mt-2 pt-2 border-t border-current/20">
+                            {msg.attachment_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                              <img 
+                                src={msg.attachment_url} 
+                                alt="Attachment" 
+                                className="max-w-full rounded cursor-pointer hover:opacity-80"
+                                onClick={() => window.open(msg.attachment_url, '_blank')}
+                              />
+                            ) : (
+                              <a 
+                                href={msg.attachment_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-sm underline"
+                              >
+                                <Paperclip className="h-3 w-3" />
+                                View Attachment
+                              </a>
+                            )}
+                          </div>
+                        )}
                         <p className="text-xs opacity-70 mt-1">
                           {new Date(msg.created_at).toLocaleTimeString()}
                         </p>
@@ -484,16 +550,51 @@ const TransactionDetail = () => {
                   </div>
 
                   {transaction.status !== "completed" && (
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Type your message..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-                      />
-                      <Button onClick={sendMessage} size="icon">
-                        <Send className="h-4 w-4" />
-                      </Button>
+                    <div className="space-y-2">
+                      {selectedFile && (
+                        <div className="flex items-center gap-2 p-2 bg-muted rounded text-sm">
+                          <Paperclip className="h-4 w-4" />
+                          <span className="flex-1 truncate">{selectedFile.name}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedFile(null)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <input
+                          type="file"
+                          id="file-upload"
+                          className="hidden"
+                          onChange={handleFileSelect}
+                          accept="image/*,.pdf,.doc,.docx,.txt"
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => document.getElementById('file-upload')?.click()}
+                          disabled={isUploading}
+                        >
+                          <Paperclip className="h-4 w-4" />
+                        </Button>
+                        <Input
+                          placeholder="Type your message..."
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+                          disabled={isUploading}
+                        />
+                        <Button 
+                          onClick={sendMessage} 
+                          size="icon"
+                          disabled={isUploading || (!newMessage.trim() && !selectedFile)}
+                        >
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </CardContent>
