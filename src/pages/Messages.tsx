@@ -91,9 +91,7 @@ const Messages = () => {
         const otherUserId = transaction.buyer_id === userId ? transaction.seller_id : transaction.buyer_id;
         
         const { data: profile } = await supabase
-          .from("profiles")
-          .select("display_name, username, full_name")
-          .eq("user_id", otherUserId)
+          .rpc("get_public_profile", { p_user_id: otherUserId })
           .maybeSingle();
 
         const messages = transaction.messages || [];

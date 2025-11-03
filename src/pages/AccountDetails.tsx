@@ -67,9 +67,7 @@ const AccountDetails = () => {
           let sellerName = "Anonymous";
           if (data.seller_id) {
             const { data: profile } = await supabase
-              .from("profiles")
-              .select("username, display_name, full_name")
-              .eq("user_id", data.seller_id)
+              .rpc("get_public_profile", { p_user_id: data.seller_id })
               .maybeSingle();
             
             if (profile) {
