@@ -19,6 +19,8 @@ import TransactionDetail from "./pages/TransactionDetail";
 import Notifications from "./pages/Notifications";
 import MyListings from "./pages/MyListings";
 import Messages from "./pages/Messages";
+import AdminDisputes from "./pages/AdminDisputes";
+import AdminAuditLogs from "./pages/AdminAuditLogs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +48,8 @@ const App = () => (
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/my-listings" element={<MyListings />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/admin/disputes" element={<AdminDisputes />} />
+          <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

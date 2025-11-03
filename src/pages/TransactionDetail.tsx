@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Clock, Check, AlertCircle, Send, Paperclip,
-  Shield, Wallet, Package
+  Shield, Wallet, Package, Star
 } from "lucide-react";
 import {
   Dialog,
@@ -24,6 +24,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { formatPrice, getCurrencyInfo } from "@/lib/currency";
 import { PaymentConfirmationModal } from "@/components/PaymentConfirmationModal";
+import { ReviewModal } from "@/components/ReviewModal";
 
 interface Transaction {
   id: string;
@@ -68,6 +69,10 @@ const TransactionDetail = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewTargetUserId, setReviewTargetUserId] = useState<string>("");
+  const [reviewTargetName, setReviewTargetName] = useState<string>("");
+  const [existingReview, setExistingReview] = useState<any>(null);
 
   useEffect(() => {
     checkAuth();
@@ -117,6 +122,48 @@ const TransactionDetail = () => {
     
     fetchTransaction();
     fetchMessages();
+    checkForExistingReview(user.id);
+  };
+
+  const checkForExistingReview = async (userId: string) => {
+    if (!id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('transaction_id', id)
+        .eq('reviewer_id', userId)
+        .maybeSingle();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      if (data) {
+        setExistingReview(data);
+      }
+    } catch (error) {
+      console.error('Error checking for review:', error);
+    }
+  };
+
+  const handleOpenReviewModal = async () => {
+    if (!transaction) return;
+    
+    const isBuyer = transaction.buyer_id === currentUserId;
+    const targetUserId = isBuyer ? transaction.seller_id : transaction.buyer_id;
+    
+    // Fetch target user profile
+    try {
+      const { data: profile } = await supabase
+        .rpc('get_public_profile', { p_user_id: targetUserId });
+      
+      const targetName = profile?.[0]?.display_name || profile?.[0]?.username || 'User';
+      setReviewTargetUserId(targetUserId);
+      setReviewTargetName(targetName);
+      setShowReviewModal(true);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      toast.error('Failed to load user information');
+    }
   };
 
   const setupRealtimeSubscription = () => {
@@ -496,6 +543,17 @@ const TransactionDetail = () => {
                       </Button>
                     </>
                   )}
+
+                  {transaction.status === "completed" && (
+                    <Button 
+                      onClick={handleOpenReviewModal} 
+                      variant={existingReview ? "outline" : "default"}
+                      className="flex-1"
+                    >
+                      <Star className="mr-2 h-4 w-4" />
+                      {existingReview ? 'Edit Review' : 'Leave a Review'}
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -704,6 +762,24 @@ const TransactionDetail = () => {
           transaction={transaction}
           userCountry={userCountry}
           onPaymentSuccess={handlePaymentSuccess}
+        />
+      )}
+
+      {/* Review Modal */}
+      {transaction && (
+        <ReviewModal
+          open={showReviewModal}
+          onOpenChange={(open) => {
+            setShowReviewModal(open);
+            if (!open) {
+              // Refresh review status after closing
+              checkForExistingReview(currentUserId);
+            }
+          }}
+          transactionId={transaction.id}
+          reviewedUserId={reviewTargetUserId}
+          reviewedUserName={reviewTargetName}
+          existingReview={existingReview}
         />
       )}
 

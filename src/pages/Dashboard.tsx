@@ -22,6 +22,7 @@ interface Profile {
 export default function Dashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -49,6 +50,16 @@ export default function Dashboard() {
     }
 
     setProfile(profileData);
+
+    // Check if user is admin/moderator
+    const { data: roles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+
+    const hasAdminRole = roles?.some(r => r.role === 'admin' || r.role === 'moderator');
+    setIsAdmin(hasAdminRole || false);
+
     setLoading(false);
   };
 
@@ -203,6 +214,35 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Admin Tools */}
+        {isAdmin && (
+          <Card className="mb-8 border-primary/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                Admin Tools
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Button variant="outline" className="h-auto flex-col py-6" asChild>
+                  <Link to="/admin/disputes">
+                    <AlertCircle className="h-6 w-6 mb-2" />
+                    Manage Disputes
+                  </Link>
+                </Button>
+
+                <Button variant="outline" className="h-auto flex-col py-6" asChild>
+                  <Link to="/admin/audit-logs">
+                    <Shield className="h-6 w-6 mb-2" />
+                    Audit Logs
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Safety Tips */}
         <Card>

@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
-import { Shield, CheckCircle, Clock, XCircle, Edit2, Save } from 'lucide-react';
+import { Shield, CheckCircle, Clock, XCircle, Edit2, Save, Star } from 'lucide-react';
+import { ReviewsList } from '@/components/ReviewsList';
 
 interface ProfileData {
   username: string;
@@ -25,6 +26,9 @@ interface ProfileData {
   is_verified_seller: boolean;
   account_type: string;
   created_at: string;
+  user_id: string;
+  average_rating: number;
+  review_count: number;
 }
 
 export default function Profile() {
@@ -156,11 +160,12 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          <Tabs defaultValue="account" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="account">Account Details</TabsTrigger>
-              <TabsTrigger value="verification">Verification</TabsTrigger>
-            </TabsList>
+            <Tabs defaultValue="account" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="account">Account Details</TabsTrigger>
+                <TabsTrigger value="verification">Verification</TabsTrigger>
+                <TabsTrigger value="reviews">Reviews</TabsTrigger>
+              </TabsList>
 
             <TabsContent value="account" className="space-y-4">
               <Card>
@@ -328,6 +333,10 @@ export default function Profile() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="reviews" className="space-y-4">
+              {profile && <ReviewsList userId={profile.user_id} />}
             </TabsContent>
           </Tabs>
         </div>

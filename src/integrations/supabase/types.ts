@@ -336,6 +336,7 @@ export type Database = {
       profiles: {
         Row: {
           account_type: Database["public"]["Enums"]["account_type"] | null
+          average_rating: number | null
           country: string | null
           created_at: string
           display_name: string | null
@@ -350,6 +351,7 @@ export type Database = {
           phone_number: string | null
           phone_verified: boolean | null
           phone_verified_at: string | null
+          review_count: number | null
           timezone: string | null
           tour_completed: boolean | null
           two_factor_enabled: boolean | null
@@ -360,6 +362,7 @@ export type Database = {
         }
         Insert: {
           account_type?: Database["public"]["Enums"]["account_type"] | null
+          average_rating?: number | null
           country?: string | null
           created_at?: string
           display_name?: string | null
@@ -374,6 +377,7 @@ export type Database = {
           phone_number?: string | null
           phone_verified?: boolean | null
           phone_verified_at?: string | null
+          review_count?: number | null
           timezone?: string | null
           tour_completed?: boolean | null
           two_factor_enabled?: boolean | null
@@ -384,6 +388,7 @@ export type Database = {
         }
         Update: {
           account_type?: Database["public"]["Enums"]["account_type"] | null
+          average_rating?: number | null
           country?: string | null
           created_at?: string
           display_name?: string | null
@@ -398,6 +403,7 @@ export type Database = {
           phone_number?: string | null
           phone_verified?: boolean | null
           phone_verified_at?: string | null
+          review_count?: number | null
           timezone?: string | null
           tour_completed?: boolean | null
           two_factor_enabled?: boolean | null
@@ -407,6 +413,47 @@ export type Database = {
           wallet_balance?: number | null
         }
         Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          reviewed_user_id: string
+          reviewer_id: string
+          transaction_id: string
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          reviewed_user_id: string
+          reviewer_id: string
+          transaction_id: string
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          reviewed_user_id?: string
+          reviewer_id?: string
+          transaction_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transactions: {
         Row: {
