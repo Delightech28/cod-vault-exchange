@@ -319,13 +319,6 @@ const AccountDetails = () => {
                 </div>
 
                 <Button 
-                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90 text-lg py-6"
-                  onClick={handlePurchase}
-                >
-                  Accept Deal
-                </Button>
-                
-                <Button 
                   variant="outline" 
                   className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                   onClick={handleContact}
