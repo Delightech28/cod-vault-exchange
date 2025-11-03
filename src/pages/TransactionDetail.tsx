@@ -210,6 +210,25 @@ const TransactionDetail = () => {
       toast.success("Payment processed! Funds held in escrow");
       fetchTransaction();
 
+      // Send notification to seller
+      if (transaction) {
+        const { data: buyerProfile } = await supabase
+          .from("profiles")
+          .select("username, display_name")
+          .eq("user_id", currentUserId)
+          .single();
+
+        const buyerName = buyerProfile?.display_name || buyerProfile?.username || "Someone";
+
+        await supabase.from("notifications").insert({
+          user_id: transaction.seller_id,
+          title: "New Pending Order",
+          message: `You have a new pending order from ${buyerName} for "${transaction.listings.title}"`,
+          type: "new_order",
+          related_id: id
+        });
+      }
+
       // Send system message
       await supabase.from("messages").insert({
         transaction_id: id,

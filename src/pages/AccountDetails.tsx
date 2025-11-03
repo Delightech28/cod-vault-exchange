@@ -172,14 +172,6 @@ const AccountDetails = () => {
 
         if (error) throw error;
 
-        await supabase.from("notifications").insert({
-          user_id: listing.seller_id,
-          title: "New Pending Order",
-          message: `You have a new pending order from ${buyerName} for "${listing.title}"`,
-          type: "new_order",
-          related_id: transaction.id
-        });
-
         toast.success("Order created! Redirecting...");
         
         setTimeout(() => {

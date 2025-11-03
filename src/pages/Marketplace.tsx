@@ -16,75 +16,6 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 
-const accounts = [
-  {
-    id: 1,
-    title: "Prestige Master Account",
-    game: "MW3",
-    level: "Prestige 10",
-    kd: "2.5 K/D",
-    price: "$299",
-    verified: true,
-    rating: 4.9,
-    reviews: 52,
-  },
-  {
-    id: 2,
-    title: "High Level Warzone",
-    game: "Warzone 2.0",
-    level: "Level 450",
-    kd: "1.8 K/D",
-    price: "$199",
-    verified: true,
-    rating: 4.8,
-    reviews: 48,
-  },
-  {
-    id: 3,
-    title: "Damascus Unlocked",
-    game: "MW2",
-    level: "Max Level",
-    kd: "2.1 K/D",
-    price: "$349",
-    verified: true,
-    rating: 5.0,
-    reviews: 65,
-  },
-  {
-    id: 4,
-    title: "Ranked Master Account",
-    game: "MW3",
-    level: "Master Rank",
-    kd: "3.0 K/D",
-    price: "$449",
-    verified: true,
-    rating: 4.9,
-    reviews: 43,
-  },
-  {
-    id: 5,
-    title: "Ultimate Warzone Pro",
-    game: "Warzone 2.0",
-    level: "Level 500",
-    kd: "2.8 K/D",
-    price: "$399",
-    verified: true,
-    rating: 4.9,
-    reviews: 58,
-  },
-  {
-    id: 6,
-    title: "Black Ops Master",
-    game: "Black Ops Cold War",
-    level: "Prestige Master",
-    kd: "2.3 K/D",
-    price: "$279",
-    verified: true,
-    rating: 4.7,
-    reviews: 41,
-  },
-];
-
 const Marketplace = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [gameFilter, setGameFilter] = useState("all");
@@ -113,22 +44,18 @@ const Marketplace = () => {
     }
   };
 
-  // Combine real listings with mock data
-  const allAccounts = [
-    ...realListings.map(listing => ({
-      id: `listing-${listing.id}`,
-      title: listing.title,
-      game: listing.game_name,
-      level: listing.rank || `Level ${listing.level || 0}`,
-      kd: listing.kd_ratio || "N/A",
-      price: `$${listing.price}`,
-      verified: listing.verified_at !== null,
-      rating: 4.5,
-      reviews: 0,
-      isRealListing: true,
-    })),
-    ...accounts.map(acc => ({ ...acc, isRealListing: false })),
-  ];
+  // Map real listings
+  const allAccounts = realListings.map(listing => ({
+    id: `listing-${listing.id}`,
+    title: listing.title,
+    game: listing.game_name,
+    level: listing.rank || `Level ${listing.level || 0}`,
+    kd: listing.kd_ratio || "N/A",
+    price: `$${listing.price}`,
+    verified: listing.verified_at !== null,
+    rating: 4.5,
+    reviews: 0,
+  }));
 
   const filteredAccounts = allAccounts.filter((account) => {
     const matchesSearch = account.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
