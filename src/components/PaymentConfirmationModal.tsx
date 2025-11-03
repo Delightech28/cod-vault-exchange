@@ -79,12 +79,12 @@ export function PaymentConfirmationModal({
   const fetchSellerInfo = async () => {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("username, display_name")
+      .select("username, display_name, full_name")
       .eq("user_id", transaction.seller_id)
       .single();
 
     if (profile) {
-      setSellerUsername(profile.display_name || profile.username || "Seller");
+      setSellerUsername(profile.display_name || profile.full_name || profile.username || "Seller");
     }
   };
 
