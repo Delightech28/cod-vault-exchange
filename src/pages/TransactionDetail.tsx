@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { formatPrice, getCurrencyInfo } from "@/lib/currency";
+import { PaymentConfirmationModal } from "@/components/PaymentConfirmationModal";
 
 interface Transaction {
   id: string;
@@ -63,6 +64,7 @@ const TransactionDetail = () => {
   const [disputeDescription, setDisputeDescription] = useState("");
   const [timeRemaining, setTimeRemaining] = useState("");
   const [userCountry, setUserCountry] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -217,51 +219,9 @@ const TransactionDetail = () => {
     }
   };
 
-  const handlePayment = async () => {
-    try {
-      const { error } = await supabase
-        .from("transactions")
-        .update({ 
-          status: "escrow_held",
-          escrow_held_at: new Date().toISOString()
-        })
-        .eq("id", id);
-
-      if (error) throw error;
-
-      toast.success("Payment processed! Funds held in escrow");
-      fetchTransaction();
-
-      // Send notification to seller
-      if (transaction) {
-        const { data: buyerProfile } = await supabase
-          .from("profiles")
-          .select("username, display_name")
-          .eq("user_id", currentUserId)
-          .single();
-
-        const buyerName = buyerProfile?.display_name || buyerProfile?.username || "Someone";
-
-        await supabase.from("notifications").insert({
-          user_id: transaction.seller_id,
-          title: "New Pending Order",
-          message: `You have a new pending order from ${buyerName} for "${transaction.listings.title}"`,
-          type: "new_order",
-          related_id: id
-        });
-      }
-
-      // Send system message
-      await supabase.from("messages").insert({
-        transaction_id: id,
-        sender_id: currentUserId,
-        content: "Payment received. Funds are now held in escrow.",
-        is_system_message: true
-      });
-    } catch (error) {
-      console.error("Error processing payment:", error);
-      toast.error("Payment failed");
-    }
+  const handlePaymentSuccess = () => {
+    toast.success("Payment processed! Funds held in escrow");
+    fetchTransaction();
   };
 
   const handleMarkDelivered = async () => {
@@ -460,10 +420,17 @@ const TransactionDetail = () => {
 
                 <div className="flex gap-3">
                   {transaction.status === "pending" && isBuyer && (
-                    <Button onClick={handlePayment} className="flex-1">
+                    <Button onClick={() => setShowPaymentModal(true)} className="flex-1">
                       <Wallet className="mr-2 h-4 w-4" />
                       Pay {formatPrice(transaction.amount, userCountry)}
                     </Button>
+                  )}
+
+                  {transaction.status === "escrow_held" && isBuyer && (
+                    <div className="flex-1 bg-primary/10 border border-primary/20 rounded-lg p-4 flex items-center justify-center gap-2">
+                      <Shield className="h-4 w-4 text-primary" />
+                      <span className="font-medium text-sm">🔒 Funds Held in Escrow</span>
+                    </div>
                   )}
 
                   {transaction.status === "escrow_held" && isSeller && (
@@ -627,6 +594,17 @@ const TransactionDetail = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Payment Confirmation Modal */}
+      {transaction && (
+        <PaymentConfirmationModal
+          open={showPaymentModal}
+          onOpenChange={setShowPaymentModal}
+          transaction={transaction}
+          userCountry={userCountry}
+          onPaymentSuccess={handlePaymentSuccess}
+        />
+      )}
 
       <Footer />
     </div>
