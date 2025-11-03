@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Shield, Star, ArrowLeft, User, Trophy, Target, Clock } from "lucide-react";
+import { Shield, Star, ArrowLeft, User, Trophy, Target, Clock, MessageCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -192,10 +192,12 @@ const AccountDetails = () => {
     }
   };
 
-  const handleContact = () => {
-    toast.info("Opening chat with seller...", {
-      description: "Feature coming soon",
-    });
+  const handleChat = () => {
+    if (!existingTransaction) {
+      toast.error("You have to make payment first");
+      return;
+    }
+    window.location.href = `/transaction/${existingTransaction.id}`;
   };
 
   if (isLoading) {
@@ -335,23 +337,23 @@ const AccountDetails = () => {
                   <div className="text-sm text-muted-foreground">One-time payment</div>
                 </div>
 
-                {existingTransaction ? (
+                <div className="flex gap-2">
                   <Button 
                     variant="outline" 
-                    className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                    onClick={() => window.location.href = `/transaction/${existingTransaction.id}`}
-                  >
-                    Message Seller
-                  </Button>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                    className="flex-1 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                     onClick={handlePurchase}
                   >
                     Buy Now
                   </Button>
-                )}
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                    onClick={handleChat}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                  </Button>
+                </div>
 
                 <Separator />
 

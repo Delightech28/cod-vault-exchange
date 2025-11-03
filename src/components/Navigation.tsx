@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, User, Bell, ShoppingBag } from "lucide-react";
+import { Menu, User, Bell, ShoppingBag, MessageCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -124,6 +124,11 @@ const Navigation = () => {
                     )}
                   </Button>
                 </Link>
+                <Link to="/transactions">
+                  <Button variant="ghost" size="icon">
+                    <MessageCircle className="h-5 w-5" />
+                  </Button>
+                </Link>
                 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -211,6 +216,11 @@ const Navigation = () => {
                     {unreadCount > 0 && (
                       <span className="absolute top-1 right-1 h-2 w-2 bg-destructive rounded-full" />
                     )}
+                  </Button>
+                </Link>
+                <Link to="/transactions">
+                  <Button variant="ghost" size="icon">
+                    <MessageCircle className="h-5 w-5" />
                   </Button>
                 </Link>
                 
