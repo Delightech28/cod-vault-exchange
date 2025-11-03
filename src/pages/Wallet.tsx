@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import { Wallet as WalletIcon, Plus, Download, ArrowUpRight, ArrowDownLeft, AlertCircle } from 'lucide-react';
 import { formatPrice } from '@/lib/currency';
@@ -19,6 +20,7 @@ export default function Wallet() {
   const [userCountry, setUserCountry] = useState<string | null>(null);
   const [addAmount, setAddAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [showAddFunds, setShowAddFunds] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -48,17 +50,77 @@ export default function Wallet() {
     setLoading(false);
   };
 
-  const handleAddFunds = () => {
-    toast({
-      title: 'Demo Mode',
-      description: 'Payment integration is not yet configured. This is a demo.',
-    });
+  const handleAddFunds = async () => {
+    if (!addAmount || parseFloat(addAmount) <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount to add.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const amount = parseFloat(addAmount);
+      const currency = userCountry === 'NG' ? 'NGN' : 'USD';
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to add funds.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await supabase.functions.invoke('initialize-payment', {
+        body: {
+          amount,
+          currency,
+          provider: 'paystack'
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to initialize payment');
+      }
+
+      const { authorization_url, reference } = response.data;
+
+      if (authorization_url) {
+        // Open Paystack checkout in new window
+        window.open(authorization_url, '_blank');
+        
+        toast({
+          title: "Payment Initialized",
+          description: "Complete your payment in the new window. Your wallet will be credited automatically.",
+        });
+
+        // Close the dialog
+        setShowAddFunds(false);
+        setAddAmount("");
+      }
+    } catch (error: any) {
+      console.error('Error initializing payment:', error);
+      toast({
+        title: "Payment Error",
+        description: error.message || "Failed to initialize payment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleWithdraw = () => {
     toast({
-      title: 'Demo Mode',
-      description: 'Withdrawal functionality is not yet configured. This is a demo.',
+      title: "Coming Soon",
+      description: "Withdrawal functionality will be available soon.",
     });
   };
 
@@ -92,7 +154,7 @@ export default function Wallet() {
               </div>
               <div className="text-4xl font-bold mb-6">{formatPrice(balance, userCountry)}</div>
               <div className="flex gap-3">
-                <Dialog>
+                <Dialog open={showAddFunds} onOpenChange={setShowAddFunds}>
                   <DialogTrigger asChild>
                     <Button className="flex-1">
                       <Plus className="h-4 w-4 mr-2" />
@@ -108,7 +170,7 @@ export default function Wallet() {
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
-                        <Label htmlFor="amount">Amount (USD)</Label>
+                        <Label htmlFor="amount">Amount ({userCountry === 'NG' ? 'NGN' : 'USD'})</Label>
                         <Input
                           id="amount"
                           type="number"
@@ -117,38 +179,54 @@ export default function Wallet() {
                           onChange={(e) => setAddAmount(e.target.value)}
                           min="10"
                           step="0.01"
+                          disabled={loading}
                         />
                       </div>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setAddAmount('50')}
+                          onClick={() => setAddAmount(userCountry === 'NG' ? '5000' : '50')}
+                          disabled={loading}
                         >
-                          $50
+                          {userCountry === 'NG' ? '₦5,000' : '$50'}
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setAddAmount('100')}
+                          onClick={() => setAddAmount(userCountry === 'NG' ? '10000' : '100')}
+                          disabled={loading}
                         >
-                          $100
+                          {userCountry === 'NG' ? '₦10,000' : '$100'}
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setAddAmount('250')}
+                          onClick={() => setAddAmount(userCountry === 'NG' ? '25000' : '250')}
+                          disabled={loading}
                         >
-                          $250
+                          {userCountry === 'NG' ? '₦25,000' : '$250'}
                         </Button>
                       </div>
-                      <Button onClick={handleAddFunds} className="w-full">
-                        Continue to Payment
-                      </Button>
                       <p className="text-xs text-muted-foreground text-center">
-                        Minimum deposit: $10.00
+                        Minimum deposit: {userCountry === 'NG' ? '₦1,000' : '$10.00'}
                       </p>
                     </div>
+                    <DialogFooter>
+                      <Button onClick={() => setShowAddFunds(false)} variant="outline" disabled={loading}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleAddFunds} disabled={loading || !addAmount || parseFloat(addAmount) <= 0}>
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          'Continue to Payment'
+                        )}
+                      </Button>
+                    </DialogFooter>
                   </DialogContent>
                 </Dialog>
 

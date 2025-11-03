@@ -550,6 +550,54 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          payment_method: string | null
+          provider: string
+          reference: string
+          status: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          payment_method?: string | null
+          provider: string
+          reference: string
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          payment_method?: string | null
+          provider?: string
+          reference?: string
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
