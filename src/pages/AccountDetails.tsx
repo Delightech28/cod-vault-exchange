@@ -277,9 +277,6 @@ const AccountDetails = () => {
                     )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-4xl font-bold text-accent">{account.price}</div>
-                </div>
               </div>
 
               <Separator className="my-6" />
