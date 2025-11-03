@@ -3,7 +3,7 @@ import { Menu, User, Bell, ShoppingBag, MessageCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,7 +92,7 @@ const Navigation = () => {
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from('profiles')
-      .select('username, display_name')
+      .select('username, display_name, avatar_url')
       .eq('user_id', userId)
       .single();
     setProfile(data);
@@ -186,6 +186,9 @@ const Navigation = () => {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                       <Avatar className="h-10 w-10">
+                        {profile?.avatar_url && (
+                          <AvatarImage src={profile.avatar_url} alt={profile.username} />
+                        )}
                         <AvatarFallback className="bg-primary text-primary-foreground">
                           {profile?.username?.[0]?.toUpperCase() || 'U'}
                         </AvatarFallback>
@@ -283,6 +286,9 @@ const Navigation = () => {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                       <Avatar className="h-9 w-9">
+                        {profile?.avatar_url && (
+                          <AvatarImage src={profile.avatar_url} alt={profile.username} />
+                        )}
                         <AvatarFallback className="bg-primary text-primary-foreground">
                           {profile?.username?.[0]?.toUpperCase() || 'U'}
                         </AvatarFallback>

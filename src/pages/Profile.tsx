@@ -29,7 +29,7 @@ interface ProfileData {
   user_id: string;
   average_rating: number;
   review_count: number;
-  avatar_url: string | null;
+  avatar_url?: string | null;
 }
 
 export default function Profile() {
