@@ -15,7 +15,7 @@ import {
   InputOTPSlot,
 } from '@/components/ui/input-otp';
 
-type OnboardingStep = 'profile' | 'phone' | 'verify-otp' | 'account-type' | 'kyc' | 'tour';
+type OnboardingStep = 'profile' | 'email-verify' | 'verify-otp' | 'account-type' | 'kyc' | 'tour';
 
 export default function Onboarding() {
   const [step, setStep] = useState<OnboardingStep>('profile');
@@ -29,9 +29,9 @@ export default function Onboarding() {
   const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [country, setCountry] = useState('');
   const [countryDialCode, setCountryDialCode] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [accountType, setAccountType] = useState<'buyer' | 'seller' | 'both'>('buyer');
+  const [userEmail, setUserEmail] = useState('');
 
   useEffect(() => {
     checkUser();
@@ -44,6 +44,7 @@ export default function Onboarding() {
       return;
     }
     setUserId(user.id);
+    setUserEmail(user.email || '');
 
     // Auto-populate display name from user metadata
     if (user.user_metadata?.full_name) {
@@ -53,7 +54,7 @@ export default function Onboarding() {
     // Check if onboarding already completed
     const { data: profile } = await supabase
       .from('profiles')
-      .select('onboarding_completed')
+      .select('onboarding_completed, email_verified')
       .eq('user_id', user.id)
       .single();
 
@@ -87,49 +88,20 @@ export default function Onboarding() {
       return;
     }
 
-    setStep('phone');
+    setStep('email-verify');
   };
 
-  const handlePhoneSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEmailVerify = async () => {
     setLoading(true);
 
-    // Check if phone number already exists
-    const fullPhoneNumber = `${countryDialCode}${phoneNumber}`;
-    const { data: existingProfile, error: checkError } = await supabase
-      .from('profiles')
-      .select('phone_number')
-      .eq('phone_number', fullPhoneNumber)
-      .maybeSingle();
-
-    if (checkError) {
-      setLoading(false);
-      toast({
-        title: 'Error',
-        description: 'Failed to verify phone number availability.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (existingProfile) {
-      setLoading(false);
-      toast({
-        title: 'Phone number already registered',
-        description: 'This phone number is already in use. Please use a different number.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Simulate sending OTP
+    // Simulate sending OTP to email
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     setLoading(false);
 
     toast({
       title: 'Code sent!',
-      description: 'We sent a verification code to your phone.',
+      description: `We sent a 6-digit verification code to ${userEmail}`,
     });
 
     setStep('verify-otp');
@@ -153,9 +125,7 @@ export default function Onboarding() {
     const { error } = await supabase
       .from('profiles')
       .update({
-        phone_number: `${countryDialCode}${phoneNumber}`,
-        phone_verified: true,
-        phone_verified_at: new Date().toISOString(),
+        email_verified: true,
       })
       .eq('user_id', userId);
 
@@ -171,8 +141,8 @@ export default function Onboarding() {
     }
 
     toast({
-      title: 'Phone verified!',
-      description: 'Your phone number has been verified successfully.',
+      title: 'Email verified!',
+      description: 'Your email has been verified successfully.',
     });
 
     setStep('account-type');
@@ -237,7 +207,7 @@ export default function Onboarding() {
 
   const stepNumber = {
     'profile': 1,
-    'phone': 2,
+    'email-verify': 2,
     'verify-otp': 2,
     'account-type': 3,
     'kyc': 4,
@@ -315,44 +285,32 @@ export default function Onboarding() {
           </Card>
         )}
 
-        {step === 'phone' && (
+        {step === 'email-verify' && (
           <Card>
             <CardHeader>
-              <CardTitle>Verify Your Phone</CardTitle>
+              <CardTitle>Verify Your Email</CardTitle>
               <CardDescription>
-                Required for buyers and sellers to ensure secure transactions
+                We'll send a verification code to your email address
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handlePhoneSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={countryDialCode}
-                      readOnly
-                      className="w-20 bg-muted text-center"
-                      placeholder="+1"
-                    />
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      placeholder="555 123-4567"
-                      className="flex-1"
-                      required
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Note: SMS verification is currently simulated for demo purposes.
-                  </p>
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Send Code
-                </Button>
-              </form>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={userEmail}
+                  readOnly
+                  className="bg-muted"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Note: Email verification is currently simulated for demo purposes.
+                </p>
+              </div>
+              <Button onClick={handleEmailVerify} className="w-full" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Send Verification Code
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -363,7 +321,7 @@ export default function Onboarding() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setStep('phone')}
+                onClick={() => setStep('email-verify')}
                 className="mb-2 -ml-2"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -371,7 +329,7 @@ export default function Onboarding() {
               </Button>
               <CardTitle>Enter Verification Code</CardTitle>
               <CardDescription>
-                We sent a 6-digit code to {countryDialCode} {phoneNumber}
+                We sent a 6-digit code to {userEmail}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -408,7 +366,7 @@ export default function Onboarding() {
                 <Button
                   variant="ghost"
                   className="w-full"
-                  onClick={handlePhoneSubmit}
+                  onClick={handleEmailVerify}
                   disabled={loading}
                 >
                   Resend Code

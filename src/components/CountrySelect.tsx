@@ -36,6 +36,7 @@ export function CountrySelect({ value, onChange }: CountrySelectProps) {
   const [open, setOpen] = useState(false);
 
   const countryList = countries
+    .filter((country) => country.region === 'Africa')
     .map((country) => {
       // Get timezone for this country
       const countryTimezones = getCountry(country.cca2);
