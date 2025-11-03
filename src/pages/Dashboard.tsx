@@ -170,20 +170,22 @@ export default function Dashboard() {
               </Button>
 
               {(profile?.account_type === 'seller' || profile?.account_type === 'both') && (
-                <Button variant="outline" className="h-auto flex-col py-6" asChild>
-                  <Link to="/sell">
-                    <Plus className="h-6 w-6 mb-2" />
-                    Create Listing
-                  </Link>
-                </Button>
-              )}
+                <>
+                  <Button variant="outline" className="h-auto flex-col py-6" asChild>
+                    <Link to="/sell">
+                      <Plus className="h-6 w-6 mb-2" />
+                      Create Listing
+                    </Link>
+                  </Button>
 
-              <Button variant="outline" className="h-auto flex-col py-6" asChild>
-                <Link to="/my-listings">
-                  <ShoppingBag className="h-6 w-6 mb-2" />
-                  My Listings
-                </Link>
-              </Button>
+                  <Button variant="outline" className="h-auto flex-col py-6" asChild>
+                    <Link to="/my-listings">
+                      <ShoppingBag className="h-6 w-6 mb-2" />
+                      My Listings
+                    </Link>
+                  </Button>
+                </>
+              )}
 
               <Button variant="outline" className="h-auto flex-col py-6" asChild>
                 <Link to="/support">
