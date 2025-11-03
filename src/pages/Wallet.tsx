@@ -25,6 +25,32 @@ export default function Wallet() {
 
   useEffect(() => {
     checkAuth();
+    
+    // Check if user returned from payment
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    const reference = urlParams.get('reference');
+    
+    if (paymentStatus === 'success') {
+      toast({
+        title: "Payment Successful",
+        description: "Your wallet will be credited shortly.",
+      });
+      // Clean up URL
+      window.history.replaceState({}, '', '/wallet');
+      // Refresh balance
+      setTimeout(() => {
+        checkAuth();
+      }, 2000);
+    } else if (paymentStatus === 'cancelled') {
+      toast({
+        title: "Payment Cancelled",
+        description: "Your payment was cancelled. No charges were made.",
+        variant: "destructive",
+      });
+      // Clean up URL
+      window.history.replaceState({}, '', '/wallet');
+    }
   }, []);
 
   const checkAuth = async () => {
@@ -94,17 +120,8 @@ export default function Wallet() {
       const { authorization_url, reference } = response.data;
 
       if (authorization_url) {
-        // Open Paystack checkout in new window
-        window.open(authorization_url, '_blank');
-        
-        toast({
-          title: "Payment Initialized",
-          description: "Complete your payment in the new window. Your wallet will be credited automatically.",
-        });
-
-        // Close the dialog
-        setShowAddFunds(false);
-        setAddAmount("");
+        // Open Paystack checkout in same window for better cancel handling
+        window.location.href = authorization_url;
       }
     } catch (error: any) {
       console.error('Error initializing payment:', error);

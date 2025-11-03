@@ -74,10 +74,11 @@ serve(async (req) => {
           amount: amountInKobo,
           currency: paystackCurrency,
           reference,
-          callback_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/paystack-webhook`,
+          callback_url: `https://cod-vault-exchange.vercel.app/wallet?payment=success&reference=${reference}`,
           metadata: {
             user_id: user.id,
             full_name: profile?.full_name || '',
+            cancel_action: 'https://cod-vault-exchange.vercel.app/wallet?payment=cancelled',
             custom_fields: [
               {
                 display_name: "User ID",
