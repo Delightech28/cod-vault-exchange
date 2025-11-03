@@ -475,47 +475,49 @@ const TransactionDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Chat Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Messages</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4 mb-4 max-h-96 overflow-y-auto">
-                  {messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`p-3 rounded-lg ${
-                        msg.is_system_message
-                          ? "bg-muted text-center text-sm italic"
-                          : msg.sender_id === currentUserId
-                          ? "bg-primary text-primary-foreground ml-auto max-w-[80%]"
-                          : "bg-muted max-w-[80%]"
-                      }`}
-                    >
-                      <p className="text-sm">{msg.content}</p>
-                      <p className="text-xs opacity-70 mt-1">
-                        {new Date(msg.created_at).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                {transaction.status !== "completed" && (
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Type your message..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-                    />
-                    <Button onClick={sendMessage} size="icon">
-                      <Send className="h-4 w-4" />
-                    </Button>
+            {/* Chat Section - Only show after payment */}
+            {transaction.status !== "pending" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Messages</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 mb-4 max-h-96 overflow-y-auto">
+                    {messages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`p-3 rounded-lg ${
+                          msg.is_system_message
+                            ? "bg-muted text-center text-sm italic"
+                            : msg.sender_id === currentUserId
+                            ? "bg-primary text-primary-foreground ml-auto max-w-[80%]"
+                            : "bg-muted max-w-[80%]"
+                        }`}
+                      >
+                        <p className="text-sm">{msg.content}</p>
+                        <p className="text-xs opacity-70 mt-1">
+                          {new Date(msg.created_at).toLocaleTimeString()}
+                        </p>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+
+                  {transaction.status !== "completed" && (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Type your message..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+                      />
+                      <Button onClick={sendMessage} size="icon">
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Right: Transaction Info */}
