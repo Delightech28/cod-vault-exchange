@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "npm:resend@2.0.0";
+
+const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,33 +48,34 @@ serve(async (req) => {
       throw new Error('Failed to save verification code');
     }
 
-    // Send email via EmailJS
-    const emailJsServiceId = Deno.env.get('EMAILJS_SERVICE_ID');
-    const emailJsTemplateId = Deno.env.get('EMAILJS_TEMPLATE_ID');
-    const emailJsPublicKey = Deno.env.get('EMAILJS_PUBLIC_KEY');
-
-    const emailData = {
-      service_id: emailJsServiceId,
-      template_id: emailJsTemplateId,
-      user_id: emailJsPublicKey,
-      template_params: {
-        to_email: email,
-        verification_code: code,
-        expiry_minutes: '10'
-      }
-    };
-
-    const emailResponse = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(emailData),
+    // Send email via Resend
+    const emailResponse = await resend.emails.send({
+      from: "Account Verification <onboarding@resend.dev>",
+      to: [email],
+      subject: "Your Email Verification Code",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #333; margin-bottom: 20px;">Email Verification</h2>
+          <p style="color: #666; font-size: 16px; line-height: 1.5;">
+            Your verification code is:
+          </p>
+          <div style="background-color: #f4f4f4; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
+            <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #333;">
+              ${code}
+            </span>
+          </div>
+          <p style="color: #666; font-size: 14px; line-height: 1.5;">
+            This code will expire in 10 minutes.
+          </p>
+          <p style="color: #999; font-size: 12px; margin-top: 30px;">
+            If you didn't request this code, please ignore this email.
+          </p>
+        </div>
+      `,
     });
 
-    if (!emailResponse.ok) {
-      const errorText = await emailResponse.text();
-      console.error('EmailJS error:', errorText);
+    if (emailResponse.error) {
+      console.error('Resend error:', emailResponse.error);
       throw new Error('Failed to send verification email');
     }
 
