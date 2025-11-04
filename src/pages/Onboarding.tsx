@@ -58,7 +58,7 @@ export default function Onboarding() {
       .from('profiles')
       .select('onboarding_completed, email_verified')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (profile?.onboarding_completed) {
       navigate('/dashboard');
@@ -154,9 +154,20 @@ export default function Onboarding() {
         .eq('user_id', userId)
         .eq('code', otp)
         .eq('verified', false)
-        .single();
+        .maybeSingle();
 
-      if (verifyError || !verificationData) {
+      if (verifyError) {
+        console.error('Verification error:', verifyError);
+        toast({
+          title: 'Error',
+          description: 'Failed to verify code. Please try again.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (!verificationData) {
         toast({
           title: 'Invalid code',
           description: 'The verification code you entered is incorrect.',
