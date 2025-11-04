@@ -119,7 +119,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3 mb-8">
+        <div className="grid gap-6 md:grid-cols-2 mb-8">
           {/* Wallet Widget */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -156,36 +156,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Verification Status */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Verification Status</CardTitle>
-              <Shield className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {profile?.is_verified_seller ? (
-                  <Badge className="bg-green-500">Verified Seller</Badge>
-                ) : (
-                  <Badge variant="secondary">Not Verified</Badge>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  KYC Status: {profile?.kyc_status?.replace('_', ' ')}
-                </p>
-              </div>
-              {!profile?.is_verified_seller && (
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="w-full mt-4"
-                  onClick={startKycVerification}
-                  disabled={isStartingKyc}
-                >
-                  {isStartingKyc ? 'Starting...' : 'Complete Verification'}
-                </Button>
-              )}
-            </CardContent>
-          </Card>
 
           {/* Quick Stats */}
           <Card>
