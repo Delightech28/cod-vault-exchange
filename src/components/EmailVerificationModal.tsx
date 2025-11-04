@@ -92,37 +92,7 @@ export default function EmailVerificationModal({
     setLoading(true);
 
     try {
-      // Check if code is valid and not expired
-      const { data: codes, error: fetchError } = await supabase
-        .from('email_verification_codes')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('code', otp)
-        .eq('verified', false)
-        .gt('expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (fetchError) throw fetchError;
-
-      if (!codes || codes.length === 0) {
-        toast({
-          title: "Invalid or expired code",
-          description: "Please check your code or request a new one",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Mark code as verified
-      const { error: updateCodeError } = await supabase
-        .from('email_verification_codes')
-        .update({ verified: true })
-        .eq('id', codes[0].id);
-
-      if (updateCodeError) throw updateCodeError;
-
+      // DEMO MODE: Accept any 6-digit code
       // Update profile to mark email as verified
       const { error: updateProfileError } = await supabase
         .from('profiles')

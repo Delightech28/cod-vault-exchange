@@ -1,45 +1,39 @@
-// Currency conversion rates (USD as base)
-const CURRENCY_RATES: Record<string, { rate: number; symbol: string; code: string }> = {
-  "United States": { rate: 1, symbol: "$", code: "USD" },
-  "Nigeria": { rate: 1452.66, symbol: "₦", code: "NGN" },
-  "United Kingdom": { rate: 0.79, symbol: "£", code: "GBP" },
-  "Canada": { rate: 1.36, symbol: "C$", code: "CAD" },
-  "Australia": { rate: 1.53, symbol: "A$", code: "AUD" },
-  "India": { rate: 83.12, symbol: "₹", code: "INR" },
-  "Germany": { rate: 0.92, symbol: "€", code: "EUR" },
-  "France": { rate: 0.92, symbol: "€", code: "EUR" },
-  "Japan": { rate: 149.50, symbol: "¥", code: "JPY" },
-  "South Africa": { rate: 18.85, symbol: "R", code: "ZAR" },
-  "Brazil": { rate: 4.98, symbol: "R$", code: "BRL" },
-  "Mexico": { rate: 17.15, symbol: "$", code: "MXN" },
-  "Kenya": { rate: 129.50, symbol: "KSh", code: "KES" },
-  "Ghana": { rate: 12.05, symbol: "GH₵", code: "GHS" },
+// Currency info without conversion (prices stored in local currency)
+const CURRENCY_INFO: Record<string, { symbol: string; code: string }> = {
+  "United States": { symbol: "$", code: "USD" },
+  "Nigeria": { symbol: "₦", code: "NGN" },
+  "United Kingdom": { symbol: "£", code: "GBP" },
+  "Canada": { symbol: "C$", code: "CAD" },
+  "Australia": { symbol: "A$", code: "AUD" },
+  "India": { symbol: "₹", code: "INR" },
+  "Germany": { symbol: "€", code: "EUR" },
+  "France": { symbol: "€", code: "EUR" },
+  "Japan": { symbol: "¥", code: "JPY" },
+  "South Africa": { symbol: "R", code: "ZAR" },
+  "Brazil": { symbol: "R$", code: "BRL" },
+  "Mexico": { symbol: "$", code: "MXN" },
+  "Kenya": { symbol: "KSh", code: "KES" },
+  "Ghana": { symbol: "GH₵", code: "GHS" },
   // Add more countries as needed
 };
 
 export const getCurrencyInfo = (country: string | null | undefined) => {
-  if (!country || !CURRENCY_RATES[country]) {
-    return CURRENCY_RATES["United States"]; // Default to USD
+  if (!country || !CURRENCY_INFO[country]) {
+    return CURRENCY_INFO["United States"]; // Default to USD
   }
-  return CURRENCY_RATES[country];
+  return CURRENCY_INFO[country];
 };
 
-export const convertPrice = (usdPrice: number, country: string | null | undefined): number => {
+export const formatPrice = (price: number, country: string | null | undefined): string => {
   const currencyInfo = getCurrencyInfo(country);
-  return usdPrice * currencyInfo.rate;
-};
-
-export const formatPrice = (usdPrice: number, country: string | null | undefined): string => {
-  const currencyInfo = getCurrencyInfo(country);
-  const convertedPrice = convertPrice(usdPrice, country);
   
   // Format based on currency code
   if (currencyInfo.code === "JPY") {
     // Japanese Yen doesn't use decimals
-    return `${currencyInfo.symbol}${Math.round(convertedPrice).toLocaleString()}`;
+    return `${currencyInfo.symbol}${Math.round(price).toLocaleString()}`;
   }
   
-  return `${currencyInfo.symbol}${convertedPrice.toLocaleString(undefined, {
+  return `${currencyInfo.symbol}${price.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })}`;
