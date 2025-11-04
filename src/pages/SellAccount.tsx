@@ -36,6 +36,7 @@ const SellAccount = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [kycStatus, setKycStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isStartingKyc, setIsStartingKyc] = useState(false);
 
   // Check KYC status on component mount
   useEffect(() => {
@@ -68,6 +69,28 @@ const SellAccount = () => {
 
     checkKycStatus();
   }, [navigate]);
+
+  const startKycVerification = async () => {
+    setIsStartingKyc(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('start-kyc-hp');
+
+      if (error) throw error;
+
+      if (data?.verification_url) {
+        toast.success('Redirecting to verification...');
+        window.location.href = data.verification_url;
+      } else {
+        throw new Error('No verification URL received');
+      }
+    } catch (error: any) {
+      console.error('Error starting KYC:', error);
+      toast.error('Failed to start verification', {
+        description: error.message || 'Please try again later',
+      });
+      setIsStartingKyc(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,9 +217,10 @@ const SellAccount = () => {
                       variant="outline" 
                       size="sm" 
                       className="mt-2"
-                      onClick={() => navigate("/profile")}
+                      onClick={startKycVerification}
+                      disabled={isStartingKyc}
                     >
-                      Complete Verification
+                      {isStartingKyc ? 'Starting...' : 'Complete Verification'}
                     </Button>
                   </div>
                 </div>

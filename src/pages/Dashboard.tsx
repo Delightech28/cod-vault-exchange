@@ -8,6 +8,7 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Wallet, TrendingUp, Shield, MessageSquare, ShoppingBag, Plus, Download, AlertCircle } from 'lucide-react';
 import { formatPrice } from '@/lib/currency';
+import { toast } from 'sonner';
 
 interface Profile {
   username: string;
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isStartingKyc, setIsStartingKyc] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -61,6 +63,28 @@ export default function Dashboard() {
     setIsAdmin(hasAdminRole || false);
 
     setLoading(false);
+  };
+
+  const startKycVerification = async () => {
+    setIsStartingKyc(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('start-kyc-hp');
+
+      if (error) throw error;
+
+      if (data?.verification_url) {
+        toast.success('Redirecting to verification...');
+        window.location.href = data.verification_url;
+      } else {
+        throw new Error('No verification URL received');
+      }
+    } catch (error: any) {
+      console.error('Error starting KYC:', error);
+      toast.error('Failed to start verification', {
+        description: error.message || 'Please try again later',
+      });
+      setIsStartingKyc(false);
+    }
   };
 
   const getTimeBasedGreeting = () => {
@@ -150,8 +174,14 @@ export default function Dashboard() {
                 </p>
               </div>
               {!profile?.is_verified_seller && (
-                <Button size="sm" variant="outline" className="w-full mt-4">
-                  Complete KYC
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="w-full mt-4"
+                  onClick={startKycVerification}
+                  disabled={isStartingKyc}
+                >
+                  {isStartingKyc ? 'Starting...' : 'Complete Verification'}
                 </Button>
               )}
             </CardContent>
