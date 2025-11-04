@@ -192,11 +192,18 @@ export default function Profile() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
 
+    const updateData: any = {
+      display_name: formData.display_name,
+    };
+
+    // Only update phone number if it's not already set
+    if (!profile.phone_number && formData.phone_number) {
+      updateData.phone_number = formData.phone_number;
+    }
+
     const { error } = await supabase
       .from('profiles')
-      .update({
-        display_name: formData.display_name,
-      })
+      .update(updateData)
       .eq('user_id', user?.id);
 
     setLoading(false);
@@ -368,10 +375,15 @@ export default function Profile() {
                       <Label htmlFor="phone">Phone Number</Label>
                       <Input
                         id="phone"
-                        value={profile.phone_number || 'Not provided'}
-                        disabled
-                        className="bg-muted"
+                        value={editing && !profile.phone_number ? (formData.phone_number || '') : (profile.phone_number || 'Not provided')}
+                        onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
+                        disabled={!editing || !!profile.phone_number}
+                        className={!editing || !!profile.phone_number ? 'bg-muted' : ''}
+                        placeholder={!profile.phone_number ? "Enter phone number" : ""}
                       />
+                      {profile.phone_number && (
+                        <p className="text-xs text-muted-foreground">Phone number can only be set once</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="joined">Member Since</Label>

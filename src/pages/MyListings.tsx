@@ -5,6 +5,16 @@ import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { Shield, Eye, DollarSign, Clock, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,6 +36,8 @@ interface Listing {
 export default function MyListings() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [listingToDelete, setListingToDelete] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -81,22 +93,27 @@ export default function MyListings() {
     return status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
-  const handleDeleteListing = async (listingId: string) => {
-    if (!confirm("Are you sure you want to delete this listing? This action cannot be undone.")) {
-      return;
-    }
+  const openDeleteModal = (listingId: string) => {
+    setListingToDelete(listingId);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteListing = async () => {
+    if (!listingToDelete) return;
 
     try {
       const { error } = await supabase
         .from("listings")
         .delete()
-        .eq("id", listingId);
+        .eq("id", listingToDelete);
 
       if (error) throw error;
 
       toast.success("Listing deleted successfully");
       // Remove from local state
-      setListings(prev => prev.filter(l => l.id !== listingId));
+      setListings(prev => prev.filter(l => l.id !== listingToDelete));
+      setDeleteModalOpen(false);
+      setListingToDelete(null);
     } catch (error: any) {
       console.error("Error deleting listing:", error);
       toast.error("Failed to delete listing", {
@@ -227,7 +244,7 @@ export default function MyListings() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleDeleteListing(listing.id)}
+                        onClick={() => openDeleteModal(listing.id)}
                         className="text-destructive hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -242,6 +259,23 @@ export default function MyListings() {
       </main>
 
       <Footer />
+
+      <AlertDialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Listing</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this listing? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteListing} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
