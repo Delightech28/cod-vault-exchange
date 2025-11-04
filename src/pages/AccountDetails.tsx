@@ -45,6 +45,7 @@ const AccountDetails = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [existingTransaction, setExistingTransaction] = useState<any>(null);
   const [userCountry, setUserCountry] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -75,6 +76,7 @@ const AccountDetails = () => {
   const fetchUserCountry = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      setCurrentUserId(user.id);
       const { data: profile } = await supabase
         .from("profiles")
         .select("country")
@@ -374,13 +376,15 @@ const AccountDetails = () => {
                   <div className="text-sm text-muted-foreground">One-time payment</div>
                 </div>
 
-                <Button 
-                  variant="outline" 
-                  className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                  onClick={handlePurchase}
-                >
-                  Buy Now
-                </Button>
+                {currentUserId !== account.sellerId && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                    onClick={handlePurchase}
+                  >
+                    Buy Now
+                  </Button>
+                )}
 
                 <Separator />
 
