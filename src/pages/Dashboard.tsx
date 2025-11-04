@@ -119,10 +119,72 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 mb-8">
+        <div className="grid gap-6 md:grid-cols-3 mb-8">
           {/* Wallet Widget */}
           <Card>
-...
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Wallet Balance</CardTitle>
+              <Wallet className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ₦{(profile?.wallet_balance || 0).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Available balance
+              </p>
+              <div className="flex gap-2 mt-4">
+                <Button size="sm" className="flex-1" asChild>
+                  <Link to="/wallet">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Funds
+                  </Link>
+                </Button>
+                <Button size="sm" variant="outline" className="flex-1" asChild>
+                  <Link to="/wallet">
+                    <Download className="h-4 w-4 mr-1" />
+                    Withdraw
+                  </Link>
+                </Button>
+              </div>
+              <Link to="/wallet" className="text-xs text-primary hover:underline block mt-2">
+                Why use wallet? →
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Verification Status */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Verification Status</CardTitle>
+              <Shield className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {profile?.is_verified_seller ? (
+                  <Badge className="bg-green-500">Verified Seller</Badge>
+                ) : (
+                  <Badge variant="secondary">Not Verified</Badge>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  KYC Status: {profile?.kyc_status?.replace('_', ' ')}
+                </p>
+              </div>
+              {!profile?.is_verified_seller && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="w-full mt-4"
+                  onClick={startKycVerification}
+                  disabled={isStartingKyc}
+                >
+                  {isStartingKyc ? 'Starting...' : 'Complete Verification'}
+                </Button>
+              )}
+            </CardContent>
           </Card>
 
           {/* Quick Stats */}
