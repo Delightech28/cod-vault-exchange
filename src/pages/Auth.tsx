@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import EmailVerificationModal from "@/components/EmailVerificationModal";
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
@@ -19,13 +20,16 @@ export default function Auth() {
     password: "", 
     confirmPassword: "" 
   });
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [verificationUserId, setVerificationUserId] = useState("");
   const navigate = useNavigate();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: signInData.email,
       password: signInData.password,
     });
@@ -39,6 +43,27 @@ export default function Auth() {
         variant: "destructive",
       });
       return;
+    }
+
+    // Check if email is verified
+    if (data.user) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('email_verified')
+        .eq('user_id', data.user.id)
+        .single();
+
+      if (!profileError && profile && !profile.email_verified) {
+        setVerificationEmail(signInData.email);
+        setVerificationUserId(data.user.id);
+        setShowVerificationModal(true);
+        toast({
+          title: "Email not verified",
+          description: "Please verify your email to continue",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     toast({
@@ -93,7 +118,7 @@ export default function Auth() {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: signUpData.email,
       password: signUpData.password,
       options: {
@@ -115,11 +140,19 @@ export default function Auth() {
       return;
     }
 
+    if (data.user) {
+      // Show verification modal
+      setVerificationEmail(signUpData.email);
+      setVerificationUserId(data.user.id);
+      setShowVerificationModal(true);
+    }
+  };
+
+  const handleVerificationComplete = () => {
     toast({
-      title: "Account created!",
+      title: "Email verified!",
       description: "Redirecting to complete your profile...",
     });
-
     navigate('/onboarding');
   };
 
@@ -346,6 +379,14 @@ export default function Auth() {
           </Tabs>
         </div>
       </main>
+
+      <EmailVerificationModal
+        isOpen={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+        email={verificationEmail}
+        userId={verificationUserId}
+        onVerified={handleVerificationComplete}
+      />
     </div>
   );
 }

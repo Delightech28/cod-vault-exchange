@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.resolve-account]
 verify_jwt = true
+
+[functions.send-verification-code]
+verify_jwt = false
