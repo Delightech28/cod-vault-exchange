@@ -18,7 +18,7 @@ import {
 type OnboardingStep = 'profile' | 'email-verify' | 'verify-otp' | 'account-type' | 'kyc' | 'tour';
 
 export default function Onboarding() {
-  const [step, setStep] = useState<OnboardingStep>('profile');
+  const [step, setStep] = useState<OnboardingStep>('email-verify');
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string>('');
   const navigate = useNavigate();
@@ -32,6 +32,8 @@ export default function Onboarding() {
   const [otp, setOtp] = useState('');
   const [accountType, setAccountType] = useState<'buyer' | 'seller' | 'both'>('buyer');
   const [userEmail, setUserEmail] = useState('');
+  const [canResend, setCanResend] = useState(true);
+  const [resendTimer, setResendTimer] = useState(0);
 
   useEffect(() => {
     checkUser();
@@ -94,17 +96,42 @@ export default function Onboarding() {
   const handleEmailVerify = async () => {
     setLoading(true);
 
-    // Simulate sending OTP to email
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const { data, error } = await supabase.functions.invoke('send-verification-code', {
+        body: { email: userEmail, userId: userId }
+      });
 
-    setLoading(false);
+      if (error) throw error;
 
-    toast({
-      title: 'Code sent!',
-      description: `We sent a 6-digit verification code to ${userEmail}`,
-    });
+      toast({
+        title: 'Code sent!',
+        description: `We sent a 6-digit verification code to ${userEmail}`,
+      });
 
-    setStep('verify-otp');
+      setCanResend(false);
+      setResendTimer(60);
+      
+      const timer = setInterval(() => {
+        setResendTimer((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            setCanResend(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      setStep('verify-otp');
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to send verification code',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOtpVerify = async () => {
@@ -119,33 +146,77 @@ export default function Onboarding() {
 
     setLoading(true);
 
-    // Demo: Accept any 6-digit code
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      // Verify the OTP code
+      const { data: verificationData, error: verifyError } = await supabase
+        .from('email_verification_codes')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('code', otp)
+        .eq('verified', false)
+        .single();
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        email_verified: true,
-      })
-      .eq('user_id', userId);
+      if (verifyError || !verificationData) {
+        toast({
+          title: 'Invalid code',
+          description: 'The verification code you entered is incorrect.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
 
-    setLoading(false);
+      // Check if code has expired
+      const expiresAt = new Date(verificationData.expires_at);
+      if (expiresAt < new Date()) {
+        toast({
+          title: 'Code expired',
+          description: 'This verification code has expired. Please request a new one.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
 
-    if (error) {
+      // Mark code as verified
+      await supabase
+        .from('email_verification_codes')
+        .update({ verified: true })
+        .eq('id', verificationData.id);
+
+      // Update profile
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          email_verified: true,
+        })
+        .eq('user_id', userId);
+
+      if (error) {
+        toast({
+          title: 'Error',
+          description: error.message,
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
+      toast({
+        title: 'Email verified!',
+        description: 'Your email has been verified successfully.',
+      });
+
+      setStep('profile');
+    } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message,
+        description: error.message || 'Failed to verify code',
         variant: 'destructive',
       });
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    toast({
-      title: 'Email verified!',
-      description: 'Your email has been verified successfully.',
-    });
-
-    setStep('account-type');
   };
 
   const handleAccountTypeSubmit = async () => {
@@ -303,9 +374,6 @@ export default function Onboarding() {
                   readOnly
                   className="bg-muted"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Note: Email verification is currently simulated for demo purposes.
-                </p>
               </div>
               <Button onClick={handleEmailVerify} className="w-full" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -349,7 +417,7 @@ export default function Onboarding() {
                   </InputOTPGroup>
                 </InputOTP>
                 <p className="text-xs text-muted-foreground text-center">
-                  Demo mode: Enter any 6-digit code
+                  Enter the 6-digit code sent to your email
                 </p>
               </div>
 
@@ -367,9 +435,9 @@ export default function Onboarding() {
                   variant="ghost"
                   className="w-full"
                   onClick={handleEmailVerify}
-                  disabled={loading}
+                  disabled={loading || !canResend}
                 >
-                  Resend Code
+                  {canResend ? 'Resend Code' : `Resend in ${resendTimer}s`}
                 </Button>
               </div>
             </CardContent>

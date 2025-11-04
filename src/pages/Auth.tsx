@@ -141,10 +141,11 @@ export default function Auth() {
     }
 
     if (data.user) {
-      // Show verification modal
-      setVerificationEmail(signUpData.email);
-      setVerificationUserId(data.user.id);
-      setShowVerificationModal(true);
+      toast({
+        title: "Account created!",
+        description: "Redirecting to complete your profile...",
+      });
+      navigate('/onboarding');
     }
   };
 
