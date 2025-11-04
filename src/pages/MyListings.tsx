@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, Eye, DollarSign, Clock, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { Shield, Eye, DollarSign, Clock, Plus, ShoppingBag, Trash2, Edit, PackageX } from "lucide-react";
 import { toast } from "sonner";
 
 interface Listing {
@@ -31,6 +31,7 @@ interface Listing {
   rank: string | null;
   kd_ratio: string | null;
   verified_at: string | null;
+  is_available: boolean;
 }
 
 export default function MyListings() {
@@ -117,6 +118,50 @@ export default function MyListings() {
     } catch (error: any) {
       console.error("Error deleting listing:", error);
       toast.error("Failed to delete listing", {
+        description: error.message,
+      });
+    }
+  };
+
+  const handleMarkAsSold = async (listingId: string) => {
+    try {
+      const { error } = await supabase
+        .from("listings")
+        .update({ is_available: false })
+        .eq("id", listingId);
+
+      if (error) throw error;
+
+      toast.success("Listing marked as sold");
+      // Update local state
+      setListings(prev => 
+        prev.map(l => l.id === listingId ? { ...l, is_available: false } : l)
+      );
+    } catch (error: any) {
+      console.error("Error marking listing as sold:", error);
+      toast.error("Failed to mark as sold", {
+        description: error.message,
+      });
+    }
+  };
+
+  const handleMarkAsAvailable = async (listingId: string) => {
+    try {
+      const { error } = await supabase
+        .from("listings")
+        .update({ is_available: true })
+        .eq("id", listingId);
+
+      if (error) throw error;
+
+      toast.success("Listing marked as available");
+      // Update local state
+      setListings(prev => 
+        prev.map(l => l.id === listingId ? { ...l, is_available: true } : l)
+      );
+    } catch (error: any) {
+      console.error("Error marking listing as available:", error);
+      toast.error("Failed to mark as available", {
         description: error.message,
       });
     }
@@ -226,12 +271,19 @@ export default function MyListings() {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between pt-4 border-t border-border">
-                    <div className="flex items-center gap-1 text-2xl font-bold text-accent">
-                      <DollarSign className="h-5 w-5" />
-                      {listing.price}
+                  <div className="pt-4 border-t border-border space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1 text-2xl font-bold text-accent">
+                        <DollarSign className="h-5 w-5" />
+                        {listing.price}
+                      </div>
+                      {!listing.is_available && (
+                        <Badge variant="destructive" className="text-xs">
+                          SOLD
+                        </Badge>
+                      )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <Button
                         size="sm"
                         variant="outline"
@@ -241,14 +293,55 @@ export default function MyListings() {
                           View Details
                         </Link>
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => openDeleteModal(listing.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      
+                      {listing.status === 'approved' && (
+                        <>
+                          {listing.is_available ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleMarkAsSold(listing.id)}
+                              className="text-orange-500 hover:text-orange-600"
+                            >
+                              <PackageX className="h-4 w-4 mr-1" />
+                              Mark Sold
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleMarkAsAvailable(listing.id)}
+                              className="text-green-500 hover:text-green-600"
+                            >
+                              <PackageX className="h-4 w-4 mr-1" />
+                              Mark Available
+                            </Button>
+                          )}
+                        </>
+                      )}
+                      
+                      {(listing.status === 'draft' || listing.status === 'rejected') && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            asChild
+                          >
+                            <Link to={`/sell?edit=${listing.id}`}>
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </Link>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => openDeleteModal(listing.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </CardContent>

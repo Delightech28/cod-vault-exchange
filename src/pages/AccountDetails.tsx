@@ -139,6 +139,7 @@ const AccountDetails = () => {
             features: data.items_included || [],
             viewsCount: data.views_count || 0,
             videoUrl: data.video_url || null,
+            isAvailable: data.is_available !== false,
           });
 
           // Check for existing transaction
@@ -393,7 +394,13 @@ const AccountDetails = () => {
                   <div className="text-sm text-muted-foreground">One-time payment</div>
                 </div>
 
-                {currentUserId !== account.sellerId && (
+                {!account.isAvailable && (
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 text-center">
+                    <p className="text-sm font-semibold text-destructive">This account is no longer available</p>
+                  </div>
+                )}
+
+                {currentUserId !== account.sellerId && account.isAvailable && (
                   <Button 
                     variant="outline" 
                     className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground"

@@ -217,6 +217,7 @@ export type Database = {
           description: string
           game_name: string
           id: string
+          is_available: boolean | null
           items_included: string[] | null
           kd_ratio: string | null
           level: number | null
@@ -242,6 +243,7 @@ export type Database = {
           description: string
           game_name: string
           id?: string
+          is_available?: boolean | null
           items_included?: string[] | null
           kd_ratio?: string | null
           level?: number | null
@@ -267,6 +269,7 @@ export type Database = {
           description?: string
           game_name?: string
           id?: string
+          is_available?: boolean | null
           items_included?: string[] | null
           kd_ratio?: string | null
           level?: number | null

@@ -92,7 +92,8 @@ const Marketplace = () => {
     views: listing.views_count || 0,
     sellerName: listing.profiles?.username || "Unknown",
     sellerVerified: listing.profiles?.is_verified_seller || false,
-    status: listing.status, // Add status to show draft badge
+    status: listing.status,
+    isAvailable: listing.is_available !== false,
   }));
 
   const filteredAccounts = allAccounts.filter((account) => {
@@ -159,8 +160,23 @@ const Marketplace = () => {
             filteredAccounts.map((account) => (
               <Card 
                 key={account.id} 
-                className="bg-card border-border hover:border-primary transition-all duration-300 hover:shadow-[0_0_30px_rgba(74,124,89,0.3)] group"
+                className={`bg-card border-border transition-all duration-300 group relative overflow-hidden ${
+                  account.isAvailable 
+                    ? 'hover:border-primary hover:shadow-[0_0_30px_rgba(74,124,89,0.3)]' 
+                    : 'opacity-75'
+                }`}
               >
+                {!account.isAvailable && (
+                  <>
+                    <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] z-10" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-[-35deg] z-20">
+                      <div className="bg-destructive text-destructive-foreground px-16 py-3 text-2xl font-bold tracking-wider shadow-lg border-4 border-destructive">
+                        SOLD OUT
+                      </div>
+                    </div>
+                  </>
+                )}
+                
                 <CardHeader>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex gap-2">
@@ -214,8 +230,11 @@ const Marketplace = () => {
                 <CardFooter className="flex items-center justify-between">
                   <div className="text-2xl font-bold text-accent">{account.price}</div>
                   <Link to={`/account/${account.id}`}>
-                    <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                      View Details
+                    <Button 
+                      className="bg-primary text-primary-foreground hover:bg-primary/90"
+                      disabled={!account.isAvailable}
+                    >
+                      {account.isAvailable ? 'View Details' : 'Sold Out'}
                     </Button>
                   </Link>
                 </CardFooter>
