@@ -31,15 +31,14 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client with the user's auth token
-    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
-      global: {
-        headers: { Authorization: authHeader },
-      },
-    });
+    // Extract JWT token from the Authorization header
+    const token = authHeader.replace('Bearer ', '');
 
-    // Get the authenticated user
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    // Create Supabase client
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get the authenticated user using the JWT token
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     
     if (userError || !user) {
       console.error('Auth error:', userError);
@@ -93,7 +92,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in start-kyc-hp function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'An error occurred' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
