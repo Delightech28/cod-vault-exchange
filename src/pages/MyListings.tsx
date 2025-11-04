@@ -289,8 +289,9 @@ export default function MyListings() {
                         variant="outline"
                         asChild
                       >
-                        <Link to={`/account/listing-${listing.id}`}>
-                          View Details
+                        <Link to={`/sell?edit=${listing.id}`}>
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
                         </Link>
                       </Button>
                       
@@ -321,26 +322,14 @@ export default function MyListings() {
                       )}
                       
                       {(listing.status === 'draft' || listing.status === 'rejected') && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            asChild
-                          >
-                            <Link to={`/sell?edit=${listing.id}`}>
-                              <Edit className="h-4 w-4 mr-1" />
-                              Edit
-                            </Link>
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => openDeleteModal(listing.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => openDeleteModal(listing.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       )}
                     </div>
                   </div>
