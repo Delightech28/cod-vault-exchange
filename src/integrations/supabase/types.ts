@@ -207,6 +207,7 @@ export type Database = {
           updated_at: string
           verified_at: string | null
           verified_by: string | null
+          video_url: string | null
           views_count: number | null
         }
         Insert: {
@@ -231,6 +232,7 @@ export type Database = {
           updated_at?: string
           verified_at?: string | null
           verified_by?: string | null
+          video_url?: string | null
           views_count?: number | null
         }
         Update: {
@@ -255,6 +257,7 @@ export type Database = {
           updated_at?: string
           verified_at?: string | null
           verified_by?: string | null
+          video_url?: string | null
           views_count?: number | null
         }
         Relationships: []

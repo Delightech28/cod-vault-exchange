@@ -136,6 +136,7 @@ const AccountDetails = () => {
             sellerRating: 4.5,
             features: data.items_included || [],
             viewsCount: data.views_count || 0,
+            videoUrl: data.video_url || null,
           });
 
           // Check for existing transaction with payment completed
@@ -344,6 +345,24 @@ const AccountDetails = () => {
                 </ul>
               </CardContent>
             </Card>
+
+            {account.videoUrl && (
+              <Card className="bg-card border-border">
+                <CardContent className="pt-6">
+                  <h3 className="text-xl font-bold mb-4">Proof Video</h3>
+                  <video 
+                    controls 
+                    className="w-full rounded-lg"
+                    preload="metadata"
+                  >
+                    <source src={account.videoUrl} type="video/mp4" />
+                    <source src={account.videoUrl} type="video/quicktime" />
+                    <source src={account.videoUrl} type="video/webm" />
+                    Your browser does not support the video tag.
+                  </video>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}

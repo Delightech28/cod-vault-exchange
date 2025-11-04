@@ -17,6 +17,7 @@ import {
 import { DollarSign, Upload, Video } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrencyInfo, formatPrice } from "@/lib/currency";
 
 const SellAccount = () => {
   const navigate = useNavigate();
@@ -37,8 +38,11 @@ const SellAccount = () => {
   const [kycStatus, setKycStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isStartingKyc, setIsStartingKyc] = useState(false);
+  const [userCountry, setUserCountry] = useState<string | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
 
-  // Check KYC status on component mount
+  // Check KYC status and user country on component mount
   useEffect(() => {
     const checkKycStatus = async () => {
       try {
@@ -51,7 +55,7 @@ const SellAccount = () => {
 
         const { data: profile, error } = await supabase
           .from("profiles")
-          .select("kyc_status")
+          .select("kyc_status, country")
           .eq("user_id", user.id)
           .single();
 
@@ -59,6 +63,7 @@ const SellAccount = () => {
           console.error("Error fetching profile:", error);
         } else {
           setKycStatus(profile?.kyc_status || "not_submitted");
+          setUserCountry(profile?.country || null);
         }
       } catch (error) {
         console.error("Error checking KYC status:", error);
@@ -92,6 +97,31 @@ const SellAccount = () => {
     }
   };
 
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Invalid file type", {
+        description: "Please upload MP4, MOV, AVI, or WEBM files only",
+      });
+      return;
+    }
+
+    // Validate file size (50MB)
+    if (file.size > 52428800) {
+      toast.error("File too large", {
+        description: "Video must be under 50MB",
+      });
+      return;
+    }
+
+    setVideoFile(file);
+    toast.success("Video selected successfully");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -107,9 +137,25 @@ const SellAccount = () => {
       return;
     }
     
-    // Validate form
-    if (!formData.title || !formData.game || !formData.price) {
-      toast.error("Please fill in all required fields");
+    // Custom validation with responsive error messages
+    if (!formData.title.trim()) {
+      toast.error("Account title is required", {
+        description: "Please provide a title for your account listing",
+      });
+      return;
+    }
+    
+    if (!formData.game) {
+      toast.error("Game selection is required", {
+        description: "Please select which game this account is for",
+      });
+      return;
+    }
+    
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      toast.error("Valid price is required", {
+        description: "Please enter a price greater than 0",
+      });
       return;
     }
 
@@ -122,6 +168,38 @@ const SellAccount = () => {
         toast.error("You must be logged in to create a listing");
         navigate("/auth");
         return;
+      }
+
+      let videoUrl = null;
+
+      // Upload video if selected
+      if (videoFile) {
+        setIsUploadingVideo(true);
+        const fileExt = videoFile.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('listing-videos')
+          .upload(fileName, videoFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error("Video upload error:", uploadError);
+          toast.error("Failed to upload video", {
+            description: "Please try again or continue without video",
+          });
+          setIsUploadingVideo(false);
+          // Don't return, allow listing creation without video
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from('listing-videos')
+            .getPublicUrl(fileName);
+          
+          videoUrl = publicUrl;
+          setIsUploadingVideo(false);
+        }
       }
 
       const itemsArray = formData.itemsIncluded
@@ -142,6 +220,7 @@ const SellAccount = () => {
           price: parseFloat(formData.price),
           description: formData.description,
           items_included: itemsArray,
+          video_url: videoUrl,
           status: "draft" as const,
         }]);
 
@@ -165,6 +244,7 @@ const SellAccount = () => {
         playtime: "",
         totalWins: "",
       });
+      setVideoFile(null);
 
       // Navigate to marketplace after a short delay
       setTimeout(() => navigate("/marketplace"), 1500);
@@ -181,6 +261,9 @@ const SellAccount = () => {
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  const isNigeriaUser = userCountry === "Nigeria";
+  const currencyInfo = getCurrencyInfo(userCountry);
 
   if (loading) {
     return (
@@ -361,32 +444,68 @@ const SellAccount = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="price">Price (USD) *</Label>
+                  <Label htmlFor="price">
+                    {isNigeriaUser ? `${currencyInfo.code}: Price (USD)` : "Price (USD)"} *
+                  </Label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
+                      {currencyInfo.symbol}
+                    </span>
                     <Input
                       id="price"
                       type="number"
+                      step="0.01"
                       placeholder="299"
                       className="pl-10"
                       value={formData.price}
                       onChange={(e) => handleChange("price", e.target.value)}
-                      required
                     />
                   </div>
+                  {isNigeriaUser && formData.price && (
+                    <p className="text-xs text-muted-foreground">
+                      ≈ {formatPrice(parseFloat(formData.price), userCountry)}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Proof</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer">
+                  <Label htmlFor="video-upload">Proof Video</Label>
+                  <input
+                    id="video-upload"
+                    type="file"
+                    accept="video/mp4,video/quicktime,video/x-msvideo,video/webm"
+                    onChange={handleVideoUpload}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="video-upload"
+                    className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer block"
+                  >
                     <Video className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                     <div className="text-sm text-muted-foreground">
-                      Click to upload or drag and drop
+                      {videoFile ? videoFile.name : "Click to upload video proof"}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      MP4, MOV up to 50MB
+                      MP4, MOV, AVI, WEBM up to 50MB (single file)
                     </div>
-                  </div>
+                  </label>
+                  {videoFile && (
+                    <div className="flex items-center justify-between bg-muted p-3 rounded-md">
+                      <span className="text-sm truncate">{videoFile.name}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setVideoFile(null);
+                          const input = document.getElementById('video-upload') as HTMLInputElement;
+                          if (input) input.value = '';
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-4 pt-4">
@@ -394,9 +513,9 @@ const SellAccount = () => {
                     type="submit"
                     className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
                     size="lg"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isUploadingVideo}
                   >
-                    {isSubmitting ? "Submitting..." : "Submit Listing"}
+                    {isUploadingVideo ? "Uploading video..." : isSubmitting ? "Submitting..." : "Submit Listing"}
                   </Button>
                   <Button 
                     type="button"
@@ -415,8 +534,11 @@ const SellAccount = () => {
                         playtime: "",
                         totalWins: "",
                       });
+                      setVideoFile(null);
+                      const input = document.getElementById('video-upload') as HTMLInputElement;
+                      if (input) input.value = '';
                     }}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isUploadingVideo}
                   >
                     Clear
                   </Button>
