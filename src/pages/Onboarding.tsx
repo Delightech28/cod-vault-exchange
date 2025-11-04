@@ -18,7 +18,7 @@ import {
 type OnboardingStep = 'profile' | 'email-verify' | 'verify-otp' | 'account-type' | 'kyc' | 'tour';
 
 export default function Onboarding() {
-  const [step, setStep] = useState<OnboardingStep>('email-verify');
+  const [step, setStep] = useState<OnboardingStep>('profile');
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string>('');
   const navigate = useNavigate();
@@ -218,7 +218,7 @@ export default function Onboarding() {
         description: 'Your email has been verified successfully.',
       });
 
-      setStep('profile');
+      setStep('account-type');
     } catch (error: any) {
       toast({
         title: 'Error',
