@@ -9,12 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ShoppingBag, Package, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatPrice } from '@/lib/currency';
 
 export default function Transactions() {
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('all');
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userCountry, setUserCountry] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,6 +32,18 @@ export default function Transactions() {
     }
 
     setCurrentUser(user);
+    
+    // Fetch user's country for currency formatting
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('country')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (profile) {
+      setUserCountry(profile.country);
+    }
+    
     await fetchTransactions(user.id);
     setLoading(false);
   };
@@ -207,7 +221,7 @@ export default function Transactions() {
                             </div>
                             <div className="text-right">
                               <div className="text-2xl font-bold text-accent">
-                                ${transaction.amount}
+                                {formatPrice(transaction.amount, userCountry)}
                               </div>
                               <Badge variant="secondary" className="mt-1">
                                 {isBuyer ? 'Buying' : 'Selling'}

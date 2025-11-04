@@ -141,7 +141,7 @@ const AccountDetails = () => {
             videoUrl: data.video_url || null,
           });
 
-          // Check for existing transaction with payment completed
+          // Check for existing transaction
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
             const { data: transactionData } = await supabase
@@ -149,7 +149,7 @@ const AccountDetails = () => {
               .select("id, status")
               .eq("listing_id", data.id)
               .eq("buyer_id", user.id)
-              .in("status", ["escrow_held", "delivered", "completed"])
+              .in("status", ["pending", "escrow_held", "delivered", "completed"])
               .maybeSingle();
             
             setExistingTransaction(transactionData);
@@ -185,6 +185,23 @@ const AccountDetails = () => {
 
         if (listing?.seller_id === user.id) {
           toast.error("Cannot buy your own listing");
+          return;
+        }
+
+        // Check for existing pending transaction
+        const { data: existingPending } = await supabase
+          .from("transactions")
+          .select("id")
+          .eq("listing_id", listingId)
+          .eq("buyer_id", user.id)
+          .eq("status", "pending")
+          .maybeSingle();
+
+        if (existingPending) {
+          toast.info("You already have a pending order for this listing");
+          setTimeout(() => {
+            window.location.href = `/transaction/${existingPending.id}`;
+          }, 1000);
           return;
         }
 
