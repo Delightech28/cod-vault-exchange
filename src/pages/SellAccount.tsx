@@ -125,17 +125,17 @@ const SellAccount = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check KYC verification
-    if (kycStatus !== "verified") {
-      toast.error("You must complete identity verification before listing", {
-        description: "Please complete KYC verification in your profile.",
-        action: {
-          label: "Go to Profile",
-          onClick: () => navigate("/profile"),
-        },
-      });
-      return;
-    }
+    // KYC verification check disabled for now - allow all users to list
+    // if (kycStatus !== "verified") {
+    //   toast.error("You must complete identity verification before listing", {
+    //     description: "Please complete KYC verification in your profile.",
+    //     action: {
+    //       label: "Go to Profile",
+    //       onClick: () => navigate("/profile"),
+    //     },
+    //   });
+    //   return;
+    // }
     
     // Custom validation with responsive error messages
     if (!formData.title.trim()) {
@@ -461,11 +461,12 @@ const SellAccount = () => {
                       onChange={(e) => handleChange("price", e.target.value)}
                     />
                   </div>
-                  {isNigeriaUser && formData.price && (
-                    <p className="text-xs text-muted-foreground">
-                      ≈ {formatPrice(parseFloat(formData.price), userCountry)}
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {isNigeriaUser 
+                      ? `Enter the price in Nigerian Naira (${currencyInfo.code})`
+                      : "Enter the price in US Dollars (USD)"
+                    }
+                  </p>
                 </div>
 
                 <div className="space-y-2">

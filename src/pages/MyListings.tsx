@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, Eye, DollarSign, Clock, Plus, ShoppingBag } from "lucide-react";
+import { Shield, Eye, DollarSign, Clock, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Listing {
@@ -79,6 +79,30 @@ export default function MyListings() {
 
   const getStatusLabel = (status: string) => {
     return status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
+  const handleDeleteListing = async (listingId: string) => {
+    if (!confirm("Are you sure you want to delete this listing? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("listings")
+        .delete()
+        .eq("id", listingId);
+
+      if (error) throw error;
+
+      toast.success("Listing deleted successfully");
+      // Remove from local state
+      setListings(prev => prev.filter(l => l.id !== listingId));
+    } catch (error: any) {
+      console.error("Error deleting listing:", error);
+      toast.error("Failed to delete listing", {
+        description: error.message,
+      });
+    }
   };
 
   if (isLoading) {
@@ -190,15 +214,25 @@ export default function MyListings() {
                       <DollarSign className="h-5 w-5" />
                       {listing.price}
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      asChild
-                    >
-                      <Link to={`/account/listing-${listing.id}`}>
-                        View Details
-                      </Link>
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        asChild
+                      >
+                        <Link to={`/account/listing-${listing.id}`}>
+                          View Details
+                        </Link>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDeleteListing(listing.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
