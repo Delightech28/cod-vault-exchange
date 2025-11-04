@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "npm:resend@2.0.0";
+// import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+// const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,38 +48,16 @@ serve(async (req) => {
       throw new Error('Failed to save verification code');
     }
 
-    // Send email via Resend
-    const emailResponse = await resend.emails.send({
-      from: "Account Verification <onboarding@resend.dev>",
-      to: [email],
-      subject: "Your Email Verification Code",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #333; margin-bottom: 20px;">Email Verification</h2>
-          <p style="color: #666; font-size: 16px; line-height: 1.5;">
-            Your verification code is:
-          </p>
-          <div style="background-color: #f4f4f4; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
-            <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #333;">
-              ${code}
-            </span>
-          </div>
-          <p style="color: #666; font-size: 14px; line-height: 1.5;">
-            This code will expire in 10 minutes.
-          </p>
-          <p style="color: #999; font-size: 12px; margin-top: 30px;">
-            If you didn't request this code, please ignore this email.
-          </p>
-        </div>
-      `,
-    });
+    // DEMO MODE: Email sending commented out
+    // const emailResponse = await resend.emails.send({
+    //   from: "Account Verification <onboarding@resend.dev>",
+    //   to: [email],
+    //   subject: "Your Email Verification Code",
+    //   html: `...`
+    // });
 
-    if (emailResponse.error) {
-      console.error('Resend error:', emailResponse.error);
-      throw new Error('Failed to send verification email');
-    }
-
-    console.log(`Verification code sent to ${email}`);
+    // Log verification code for demo testing
+    console.log(`🔐 DEMO MODE - Verification code for ${email}: ${code}`);
 
     return new Response(
       JSON.stringify({ 
