@@ -445,7 +445,7 @@ const SellAccount = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="price">
-                    {isNigeriaUser ? `${currencyInfo.code}: Price (USD)` : "Price (USD)"} *
+                    {isNigeriaUser ? `Price (${currencyInfo.code})` : "Price (USD)"} *
                   </Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
@@ -455,7 +455,7 @@ const SellAccount = () => {
                       id="price"
                       type="number"
                       step="0.01"
-                      placeholder="299"
+                      placeholder={isNigeriaUser ? "15,000" : "299"}
                       className="pl-10"
                       value={formData.price}
                       onChange={(e) => handleChange("price", e.target.value)}
