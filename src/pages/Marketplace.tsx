@@ -47,7 +47,9 @@ const Marketplace = () => {
 
   const fetchListings = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      let query = supabase
         .from("listings")
         .select(`
           *,
@@ -55,9 +57,16 @@ const Marketplace = () => {
             username,
             is_verified_seller
           )
-        `)
-        .eq("status", "approved")
-        .order("created_at", { ascending: false });
+        `);
+
+      // Show approved listings OR user's own draft listings
+      if (user) {
+        query = query.or(`status.eq.approved,and(status.eq.draft,seller_id.eq.${user.id})`);
+      } else {
+        query = query.eq("status", "approved");
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
 
@@ -83,6 +92,7 @@ const Marketplace = () => {
     views: listing.views_count || 0,
     sellerName: listing.profiles?.username || "Unknown",
     sellerVerified: listing.profiles?.is_verified_seller || false,
+    status: listing.status, // Add status to show draft badge
   }));
 
   const filteredAccounts = allAccounts.filter((account) => {
@@ -153,9 +163,16 @@ const Marketplace = () => {
               >
                 <CardHeader>
                   <div className="flex items-start justify-between mb-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {account.game}
-                    </Badge>
+                    <div className="flex gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {account.game}
+                      </Badge>
+                      {account.status === 'draft' && (
+                        <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-500">
+                          Draft
+                        </Badge>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Eye className="h-3 w-3" />
