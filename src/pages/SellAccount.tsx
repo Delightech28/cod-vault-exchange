@@ -221,13 +221,13 @@ const SellAccount = () => {
           description: formData.description,
           items_included: itemsArray,
           video_url: videoUrl,
-          status: "draft" as const,
+          status: "approved" as const, // Auto-approve all new listings
         }]);
 
       if (error) throw error;
 
-      toast.success("Account listing submitted!", {
-        description: "Your listing has been created and will be reviewed soon.",
+      toast.success("Account listing published!", {
+        description: "Your listing is now live in the marketplace.",
       });
 
       // Reset form
