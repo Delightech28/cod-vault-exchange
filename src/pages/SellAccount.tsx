@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -34,9 +34,55 @@ const SellAccount = () => {
     totalWins: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [kycStatus, setKycStatus] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Check KYC status on component mount
+  useEffect(() => {
+    const checkKycStatus = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          navigate("/auth");
+          return;
+        }
+
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("kyc_status")
+          .eq("user_id", user.id)
+          .single();
+
+        if (error) {
+          console.error("Error fetching profile:", error);
+        } else {
+          setKycStatus(profile?.kyc_status || "not_submitted");
+        }
+      } catch (error) {
+        console.error("Error checking KYC status:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkKycStatus();
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check KYC verification
+    if (kycStatus !== "verified") {
+      toast.error("You must complete identity verification before listing", {
+        description: "Please complete KYC verification in your profile.",
+        action: {
+          label: "Go to Profile",
+          onClick: () => navigate("/profile"),
+        },
+      });
+      return;
+    }
     
     // Validate form
     if (!formData.title || !formData.game || !formData.price) {
@@ -113,6 +159,14 @@ const SellAccount = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -125,6 +179,30 @@ const SellAccount = () => {
               List your Call of Duty account and reach thousands of potential buyers
             </p>
           </div>
+
+          {kycStatus !== "verified" && (
+            <Card className="mb-6 border-yellow-500 bg-yellow-500/10">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="text-yellow-500">⚠️</div>
+                  <div>
+                    <p className="font-semibold">Identity Verification Required</p>
+                    <p className="text-sm text-muted-foreground">
+                      You must complete identity verification before you can list accounts.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2"
+                      onClick={() => navigate("/profile")}
+                    >
+                      Complete Verification
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <form onSubmit={handleSubmit}>
             <Card className="bg-card border-border">

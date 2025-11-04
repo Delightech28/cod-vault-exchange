@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
 import { Shield, CheckCircle, Clock, XCircle, Edit2, Save, Star, Camera } from 'lucide-react';
 import { ReviewsList } from '@/components/ReviewsList';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
 
 interface ProfileData {
   username: string;
@@ -151,6 +152,40 @@ export default function Profile() {
     });
   };
 
+  const handleStartKyc = async () => {
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.functions.invoke('start-kyc-hp');
+      
+      if (error) {
+        console.error('KYC start error:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to start verification. Please try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (data?.verification_url) {
+        // Redirect to Humanity Protocol verification page
+        window.location.href = data.verification_url;
+      } else {
+        throw new Error('No verification URL received');
+      }
+    } catch (error) {
+      console.error('Error starting KYC:', error);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!profile) return;
 
@@ -235,7 +270,10 @@ export default function Profile() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h2 className="text-2xl font-bold">{profile.display_name}</h2>
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                      {profile.display_name}
+                      <VerifiedBadge isVerified={profile.is_verified_seller} size="lg" />
+                    </h2>
                     {profile.is_verified_seller && (
                       <Badge className="bg-green-500">
                         <CheckCircle className="h-3 w-3 mr-1" />
@@ -385,8 +423,10 @@ export default function Profile() {
                         <li>• Increased buyer trust</li>
                       </ul>
                     </div>
-                    {profile.kyc_status === 'not_submitted' && (
-                      <Button>Start Verification</Button>
+                  {profile.kyc_status === 'not_submitted' && (
+                      <Button onClick={handleStartKyc} disabled={loading}>
+                        {loading ? 'Starting...' : 'Start Verification'}
+                      </Button>
                     )}
                     {profile.kyc_status === 'pending' && (
                       <Button variant="secondary" disabled>Under Review</Button>

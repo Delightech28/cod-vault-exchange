@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -92,7 +93,7 @@ const Navigation = () => {
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from('profiles')
-      .select('username, display_name, avatar_url')
+      .select('username, display_name, avatar_url, is_verified_seller')
       .eq('user_id', userId)
       .single();
     setProfile(data);
@@ -198,8 +199,9 @@ const Navigation = () => {
                   <DropdownMenuContent className="w-56" align="end">
                     <DropdownMenuLabel>
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">
+                        <p className="text-sm font-medium leading-none flex items-center gap-1">
                           {profile?.display_name || profile?.username}
+                          <VerifiedBadge isVerified={profile?.is_verified_seller} size="sm" />
                         </p>
                         <p className="text-xs leading-none text-muted-foreground">
                           @{profile?.username}
@@ -298,8 +300,9 @@ const Navigation = () => {
                   <DropdownMenuContent className="w-56" align="end">
                     <DropdownMenuLabel>
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">
+                        <p className="text-sm font-medium leading-none flex items-center gap-1">
                           {profile?.display_name || profile?.username}
+                          <VerifiedBadge isVerified={profile?.is_verified_seller} size="sm" />
                         </p>
                         <p className="text-xs leading-none text-muted-foreground">
                           @{profile?.username}

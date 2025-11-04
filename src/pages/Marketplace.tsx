@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/currency";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 const Marketplace = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,7 +49,13 @@ const Marketplace = () => {
     try {
       const { data, error } = await supabase
         .from("listings")
-        .select("*")
+        .select(`
+          *,
+          profiles!seller_id (
+            username,
+            is_verified_seller
+          )
+        `)
         .eq("status", "approved")
         .order("created_at", { ascending: false });
 
@@ -74,6 +81,8 @@ const Marketplace = () => {
     rating: 4.5,
     reviews: 0,
     views: listing.views_count || 0,
+    sellerName: listing.profiles?.username || "Unknown",
+    sellerVerified: listing.profiles?.is_verified_seller || false,
   }));
 
   const filteredAccounts = allAccounts.filter((account) => {
@@ -163,6 +172,13 @@ const Marketplace = () => {
                 </CardHeader>
 
                 <CardContent className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Seller</span>
+                    <span className="font-semibold flex items-center gap-1">
+                      {account.sellerName}
+                      <VerifiedBadge isVerified={account.sellerVerified} size="sm" />
+                    </span>
+                  </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Level</span>
                     <span className="font-semibold">{account.level}</span>

@@ -22,6 +22,7 @@ import Messages from "./pages/Messages";
 import AdminDisputes from "./pages/AdminDisputes";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
 import NotFound from "./pages/NotFound";
+import KycCallback from "./pages/KycCallback";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
           <Route path="/messages" element={<Messages />} />
           <Route path="/admin/disputes" element={<AdminDisputes />} />
           <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
+          <Route path="/kyc/callback" element={<KycCallback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
