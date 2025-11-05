@@ -67,7 +67,7 @@ const Index = () => {
         }
       }
 
-      // Fetch first 4 approved and available listings
+      // Fetch first 4 approved and available listings with seller's country
       const { data: listings } = await supabase
         .from('listings')
         .select(`
@@ -79,7 +79,8 @@ const Index = () => {
           price,
           seller:profiles!listings_seller_id_fkey (
             is_verified_seller,
-            average_rating
+            average_rating,
+            country
           ),
           is_available
         `)
@@ -95,7 +96,7 @@ const Index = () => {
           game: listing.game_name,
           level: listing.level ? `Level ${listing.level}` : 'Max Level',
           kd: listing.kd_ratio || 'N/A',
-          price: formatPrice(listing.price, country),
+          price: formatPrice(listing.price, listing.seller?.country),
           verified: listing.seller?.is_verified_seller || false,
           rating: listing.seller?.average_rating || 0,
         }));
