@@ -49,11 +49,11 @@ const features = [
 
 const Index = () => {
   const [featuredAccounts, setFeaturedAccounts] = useState<any[]>([]);
-  const [userCountry, setUserCountry] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       // Fetch user country
+      let country = null;
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: profile } = await supabase
@@ -63,7 +63,7 @@ const Index = () => {
           .single();
         
         if (profile) {
-          setUserCountry(profile.country);
+          country = profile.country;
         }
       }
 
@@ -95,7 +95,7 @@ const Index = () => {
           game: listing.game_name,
           level: listing.level ? `Level ${listing.level}` : 'Max Level',
           kd: listing.kd_ratio || 'N/A',
-          price: formatPrice(listing.price, userCountry),
+          price: formatPrice(listing.price, country),
           verified: listing.seller?.is_verified_seller || false,
           rating: listing.seller?.average_rating || 0,
         }));
