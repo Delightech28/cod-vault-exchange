@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
 import Hero from "@/components/Hero";
 import Footer from "@/components/Footer";
@@ -6,49 +7,22 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Star, Search, Lock, Users, CheckCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { formatPrice } from "@/lib/currency";
 
-const featuredAccounts = [
-  {
-    id: 1,
-    title: "Prestige Master Account",
-    game: "MW3",
-    level: "Prestige 10",
-    kd: "2.5 K/D",
-    price: "$299",
-    verified: true,
-    rating: 4.9,
-  },
-  {
-    id: 2,
-    title: "High Level Warzone",
-    game: "Warzone 2.0",
-    level: "Level 450",
-    kd: "1.8 K/D",
-    price: "$199",
-    verified: true,
-    rating: 4.8,
-  },
-  {
-    id: 3,
-    title: "Damascus Unlocked",
-    game: "MW2",
-    level: "Max Level",
-    kd: "2.1 K/D",
-    price: "$349",
-    verified: true,
-    rating: 5.0,
-  },
-  {
-    id: 4,
-    title: "Ranked Master Account",
-    game: "MW3",
-    level: "Master Rank",
-    kd: "3.0 K/D",
-    price: "$449",
-    verified: true,
-    rating: 4.9,
-  },
-];
+interface Listing {
+  id: string;
+  title: string;
+  game_name: string;
+  level: number | null;
+  kd_ratio: string | null;
+  price: number;
+  seller: {
+    is_verified_seller: boolean;
+    average_rating: number;
+  };
+  is_available: boolean;
+}
 
 const features = [
   {
@@ -74,6 +48,64 @@ const features = [
 ];
 
 const Index = () => {
+  const [featuredAccounts, setFeaturedAccounts] = useState<any[]>([]);
+  const [userCountry, setUserCountry] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      // Fetch user country
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('country')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile) {
+          setUserCountry(profile.country);
+        }
+      }
+
+      // Fetch first 4 approved and available listings
+      const { data: listings } = await supabase
+        .from('listings')
+        .select(`
+          id,
+          title,
+          game_name,
+          level,
+          kd_ratio,
+          price,
+          seller:profiles!listings_seller_id_fkey (
+            is_verified_seller,
+            average_rating
+          ),
+          is_available
+        `)
+        .eq('status', 'approved')
+        .eq('is_available', true)
+        .order('created_at', { ascending: false })
+        .limit(4);
+
+      if (listings) {
+        const mapped = listings.map((listing: any) => ({
+          id: listing.id,
+          title: listing.title,
+          game: listing.game_name,
+          level: listing.level ? `Level ${listing.level}` : 'Max Level',
+          kd: listing.kd_ratio || 'N/A',
+          price: formatPrice(listing.price, userCountry),
+          verified: listing.seller?.is_verified_seller || false,
+          rating: listing.seller?.average_rating || 0,
+        }));
+        setFeaturedAccounts(mapped);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
