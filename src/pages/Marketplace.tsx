@@ -55,7 +55,8 @@ const Marketplace = () => {
           *,
           profiles!seller_id (
             username,
-            is_verified_seller
+            is_verified_seller,
+            country
           )
         `);
 
@@ -85,7 +86,7 @@ const Marketplace = () => {
     game: listing.game_name,
     level: listing.rank || `Level ${listing.level || 0}`,
     kd: listing.kd_ratio || "N/A",
-    price: formatPrice(listing.price, userCountry),
+    price: formatPrice(listing.price, listing.profiles?.country),
     verified: listing.verified_at !== null,
     rating: 4.5,
     reviews: 0,
