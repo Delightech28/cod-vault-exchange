@@ -200,13 +200,12 @@ export default function Auth() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="signin-password">Password</Label>
-                        <button 
-                          type="button"
+                        <Link 
+                          to="/forgot-password"
                           className="text-xs text-primary hover:underline"
-                          onClick={() => toast({ title: "Password reset", description: "Coming soon" })}
                         >
                           Forgot password?
-                        </button>
+                        </Link>
                       </div>
                       <Input
                         id="signin-password"
