@@ -13,14 +13,14 @@ const TermsOfService = () => {
             <section>
               <h2 className="text-2xl font-semibold text-foreground mb-4">1. Acceptance of Terms</h2>
               <p>
-                By accessing and using COD Vault Exchange, you accept and agree to be bound by the terms and provision of this agreement.
+                By accessing and using TradeOps, you accept and agree to be bound by the terms and provision of this agreement.
               </p>
             </section>
 
             <section>
               <h2 className="text-2xl font-semibold text-foreground mb-4">2. Use License</h2>
               <p>
-                Permission is granted to temporarily access the materials (information or software) on COD Vault Exchange for personal, non-commercial transitory viewing only.
+                Permission is granted to temporarily access the materials (information or software) on TradeOps for personal, non-commercial transitory viewing only.
               </p>
             </section>
 
@@ -62,7 +62,7 @@ const TermsOfService = () => {
             <section>
               <h2 className="text-2xl font-semibold text-foreground mb-4">8. Limitations</h2>
               <p>
-                COD Vault Exchange shall not be held liable for any damages arising from the use or inability to use our services.
+                TradeOps shall not be held liable for any damages arising from the use or inability to use our services.
               </p>
             </section>
 
