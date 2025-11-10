@@ -23,14 +23,12 @@ export default function Wallet() {
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState(0);
   const [userCountry, setUserCountry] = useState<string | null>(null);
-  const [addAmount, setAddAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [bankCode, setBankCode] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [accountName, setAccountName] = useState('');
   const [banks, setBanks] = useState<Bank[]>([]);
   const [verifyingAccount, setVerifyingAccount] = useState(false);
-  const [showAddFunds, setShowAddFunds] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
   const navigate = useNavigate();
@@ -183,63 +181,8 @@ export default function Wallet() {
     setLoading(false);
   };
 
-  const handleAddFunds = async () => {
-    if (!addAmount || parseFloat(addAmount) <= 0) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid amount to add.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const amount = parseFloat(addAmount);
-      // Always use NGN for Paystack (primary supported currency)
-      const currency = 'NGN';
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to add funds.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const response = await supabase.functions.invoke('initialize-payment', {
-        body: {
-          amount,
-          currency,
-          provider: 'paystack'
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message || 'Failed to initialize payment');
-      }
-
-      const { authorization_url, reference } = response.data;
-
-      if (authorization_url) {
-        // Open Paystack checkout in same window for better cancel handling
-        window.location.href = authorization_url;
-      }
-    } catch (error: any) {
-      console.error('Error initializing payment:', error);
-      toast({
-        title: "Payment Error",
-        description: error.message || "Failed to initialize payment. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+  const handleAddFunds = () => {
+    navigate('/moonpay');
   };
 
   const handleWithdraw = async () => {
@@ -369,81 +312,10 @@ export default function Wallet() {
                 })}
               </div>
               <div className="flex gap-3">
-                <Dialog open={showAddFunds} onOpenChange={setShowAddFunds}>
-                  <DialogTrigger asChild>
-                    <Button className="flex-1">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Funds
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add Funds to Wallet</DialogTitle>
-                      <DialogDescription>
-                        Enter the amount you want to add to your wallet
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="amount">Amount (NGN)</Label>
-                        <Input
-                          id="amount"
-                          type="number"
-                          placeholder="0.00"
-                          value={addAmount}
-                          onChange={(e) => setAddAmount(e.target.value)}
-                          min="50"
-                          step="10"
-                          disabled={loading}
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setAddAmount('50')}
-                          disabled={loading}
-                        >
-                          ₦50
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setAddAmount('100')}
-                          disabled={loading}
-                        >
-                          ₦100
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setAddAmount('500')}
-                          disabled={loading}
-                        >
-                          ₦500
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground text-center">
-                        Minimum deposit: ₦50
-                      </p>
-                    </div>
-                    <DialogFooter>
-                      <Button onClick={() => setShowAddFunds(false)} variant="outline" disabled={loading}>
-                        Cancel
-                      </Button>
-                      <Button onClick={handleAddFunds} disabled={loading || !addAmount || parseFloat(addAmount) <= 0}>
-                        {loading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Processing...
-                          </>
-                        ) : (
-                          'Continue to Payment'
-                        )}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                <Button className="flex-1" onClick={handleAddFunds}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Funds
+                </Button>
 
                 <Dialog open={showWithdraw} onOpenChange={setShowWithdraw}>
                   <DialogTrigger asChild>
