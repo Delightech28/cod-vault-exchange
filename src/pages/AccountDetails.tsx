@@ -5,13 +5,13 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Shield, Star, ArrowLeft, User, Trophy, Target, Clock, Send } from "lucide-react";
+import { Shield, Star, ArrowLeft, User, Trophy, Target, Clock } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice, getCurrencyInfo } from "@/lib/currency";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ReviewsList } from "@/components/ReviewsList";
+import { ReviewModal } from "@/components/ReviewModal";
 
 const accountsData: Record<string, any> = {
   "1": {
@@ -48,24 +48,9 @@ const AccountDetails = () => {
   const [existingTransaction, setExistingTransaction] = useState<any>(null);
   const [userCountry, setUserCountry] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [reviewText, setReviewText] = useState("");
-
-  const mockReviews = [
-    {
-      id: 1,
-      userName: "JohnDoe87",
-      rating: 5,
-      comment: "Amazing account! Exactly as described. Fast delivery and great seller support.",
-      createdAt: "2 days ago"
-    },
-    {
-      id: 2,
-      userName: "GamerPro",
-      rating: 4,
-      comment: "Good account with all the promised features. Very satisfied with the purchase.",
-      createdAt: "1 week ago"
-    }
-  ];
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [existingReview, setExistingReview] = useState<any>(null);
+  const [canReview, setCanReview] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -174,6 +159,21 @@ const AccountDetails = () => {
               .maybeSingle();
             
             setExistingTransaction(transactionData);
+
+            // Check if user can review (completed transaction)
+            if (transactionData && transactionData.status === "completed") {
+              setCanReview(true);
+
+              // Check for existing review
+              const { data: reviewData } = await supabase
+                .from("reviews")
+                .select("id, rating, comment")
+                .eq("transaction_id", transactionData.id)
+                .eq("reviewer_id", user.id)
+                .maybeSingle();
+              
+              setExistingReview(reviewData);
+            }
           }
         }
       } else {
@@ -406,66 +406,25 @@ const AccountDetails = () => {
 
             <Card className="bg-card border-border">
               <CardContent className="pt-6">
-                <h3 className="text-xl font-bold mb-4">Reviews</h3>
-                
-                {/* Review Input */}
-                <div className="mb-6">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Write a review..."
-                      value={reviewText}
-                      onChange={(e) => setReviewText(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Button 
-                      size="icon"
-                      onClick={() => {
-                        if (reviewText.trim()) {
-                          toast.success("Review submitted!");
-                          setReviewText("");
-                        }
-                      }}
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold">Reviews</h3>
+                  {canReview && (
+                    <Button
+                      onClick={() => setReviewModalOpen(true)}
+                      variant="outline"
+                      size="sm"
                     >
-                      <Send className="h-4 w-4" />
+                      <Star className="h-4 w-4 mr-2" />
+                      {existingReview ? "Edit Review" : "Leave Review"}
                     </Button>
-                  </div>
+                  )}
                 </div>
 
-                <Separator className="mb-6" />
-
-                {/* Reviews List */}
-                <div className="space-y-4">
-                  {mockReviews.map((review) => (
-                    <div key={review.id} className="border-b border-border pb-4 last:border-0">
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {review.userName.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-semibold">{review.userName}</span>
-                            <span className="text-xs text-muted-foreground">{review.createdAt}</span>
-                          </div>
-                          <div className="flex items-center gap-1 mb-2">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={`h-4 w-4 ${
-                                  star <= review.rating
-                                    ? 'fill-yellow-400 text-yellow-400'
-                                    : 'text-muted-foreground'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <p className="text-sm text-muted-foreground">{review.comment}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {account.sellerId ? (
+                  <ReviewsList userId={account.sellerId} />
+                ) : (
+                  <p className="text-muted-foreground text-sm">No reviews yet.</p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -534,6 +493,23 @@ const AccountDetails = () => {
       </main>
 
       <Footer />
+
+      {canReview && account.sellerId && existingTransaction && (
+        <ReviewModal
+          open={reviewModalOpen}
+          onOpenChange={(open) => {
+            setReviewModalOpen(open);
+            if (!open) {
+              // Refresh the page to show updated review
+              fetchAccountDetails();
+            }
+          }}
+          transactionId={existingTransaction.id}
+          reviewedUserId={account.sellerId}
+          reviewedUserName={account.seller}
+          existingReview={existingReview}
+        />
+      )}
     </div>
   );
 };
