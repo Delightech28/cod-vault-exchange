@@ -5,13 +5,14 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Shield, Star, ArrowLeft, User, Trophy, Target, Clock } from "lucide-react";
+import { Shield, Star, ArrowLeft, User, Trophy, Target, Clock, Send } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice, getCurrencyInfo } from "@/lib/currency";
 import { ReviewsList } from "@/components/ReviewsList";
 import { ReviewModal } from "@/components/ReviewModal";
+import { Textarea } from "@/components/ui/textarea";
 
 const accountsData: Record<string, any> = {
   "1": {
@@ -51,6 +52,8 @@ const AccountDetails = () => {
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [existingReview, setExistingReview] = useState<any>(null);
   const [canReview, setCanReview] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
 
   useEffect(() => {
     const init = async () => {
@@ -173,6 +176,8 @@ const AccountDetails = () => {
                 .maybeSingle();
               
               setExistingReview(reviewData);
+              setReviewRating(reviewData.rating);
+              setReviewComment(reviewData.comment || "");
             }
           }
         }
@@ -184,6 +189,46 @@ const AccountDetails = () => {
       setAccount(accountsData[id || "1"] || accountsData["1"]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!reviewRating || !existingTransaction) {
+      toast.error("Please select a rating");
+      return;
+    }
+
+    try {
+      if (existingReview) {
+        const { error } = await supabase
+          .from("reviews")
+          .update({
+            rating: reviewRating,
+            comment: reviewComment,
+          })
+          .eq("id", existingReview.id);
+
+        if (error) throw error;
+        toast.success("Review updated successfully");
+      } else {
+        const { error } = await supabase
+          .from("reviews")
+          .insert({
+            transaction_id: existingTransaction.id,
+            reviewer_id: currentUserId,
+            reviewed_user_id: account.sellerId,
+            rating: reviewRating,
+            comment: reviewComment,
+          });
+
+        if (error) throw error;
+        toast.success("Review submitted successfully");
+      }
+
+      fetchAccountDetails();
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      toast.error("Failed to submit review");
     }
   };
 
@@ -406,19 +451,43 @@ const AccountDetails = () => {
 
             <Card className="bg-card border-border">
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold">Reviews</h3>
-                  {canReview && (
-                    <Button
-                      onClick={() => setReviewModalOpen(true)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Star className="h-4 w-4 mr-2" />
-                      {existingReview ? "Edit Review" : "Leave Review"}
-                    </Button>
-                  )}
-                </div>
+                <h3 className="text-xl font-bold mb-4">Reviews</h3>
+
+                {canReview && (
+                  <div className="mb-6 p-4 bg-muted/50 rounded-lg space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Your Rating:</span>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`h-5 w-5 cursor-pointer transition-colors ${
+                              star <= reviewRating
+                                ? "fill-accent text-accent"
+                                : "text-muted-foreground hover:text-accent"
+                            }`}
+                            onClick={() => setReviewRating(star)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Textarea
+                        placeholder="Share your experience with this seller..."
+                        value={reviewComment}
+                        onChange={(e) => setReviewComment(e.target.value)}
+                        className="flex-1 min-h-[80px] bg-background"
+                      />
+                      <Button
+                        size="icon"
+                        onClick={handleSubmitReview}
+                        className="bg-primary hover:bg-primary/90"
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {account.sellerId ? (
                   <ReviewsList userId={account.sellerId} />
