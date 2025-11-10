@@ -1,13 +1,78 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowDownToLine, ArrowUpFromLine, Wallet } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const MoonPay = () => {
   const [activeTab, setActiveTab] = useState("buy");
+  const [walletAddress, setWalletAddress] = useState("");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    checkAuth();
+    loadMoonPayScript();
+  }, []);
+
+  const checkAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Please login to access wallet");
+      navigate("/auth");
+      return;
+    }
+
+    // Fetch user's wallet address from profile
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("wallet_address")
+      .eq("user_id", user.id)
+      .single();
+
+    if (profile?.wallet_address) {
+      setWalletAddress(profile.wallet_address);
+    }
+  };
+
+  const loadMoonPayScript = () => {
+    const script = document.createElement("script");
+    script.src = "https://static.moonpay.com/web-sdk/v1/moonpay-web-sdk.min.js";
+    script.async = true;
+    document.body.appendChild(script);
+  };
+
+  const openMoonPayWidget = (flow: "buy" | "sell") => {
+    if (!walletAddress) {
+      toast.error("Please add a wallet address in your profile first");
+      navigate("/profile");
+      return;
+    }
+
+    // @ts-ignore - MoonPay SDK loaded via script
+    if (typeof window.MoonPayWebSdk !== "undefined") {
+      // @ts-ignore
+      const moonPaySdk = window.MoonPayWebSdk.init({
+        flow: flow,
+        environment: "sandbox",
+        variant: "overlay",
+        params: {
+          apiKey: import.meta.env.VITE_MOONPAY_PUBLISHABLE_KEY,
+          currencyCode: flow === "buy" ? "eth_base" : "eth",
+          walletAddress: walletAddress,
+          baseCurrencyCode: "usd",
+          colorCode: "#9b87f5",
+        }
+      });
+
+      moonPaySdk.show();
+    } else {
+      toast.error("MoonPay SDK not loaded. Please refresh the page.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -46,14 +111,17 @@ const MoonPay = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="p-6 bg-muted rounded-lg text-center">
+                    <div 
+                      className="p-6 bg-muted rounded-lg text-center cursor-pointer hover:bg-muted/80 transition-colors"
+                      onClick={() => openMoonPayWidget("buy")}
+                    >
                       <p className="text-muted-foreground mb-4">
-                        MoonPay widget will be displayed here (Sandbox)
+                        Click to open MoonPay widget
                       </p>
-                      <Button disabled className="gap-2">
-                        <ArrowDownToLine className="h-4 w-4" />
+                      <div className="flex items-center justify-center gap-2 text-primary font-semibold">
+                        <ArrowDownToLine className="h-5 w-5" />
                         Buy with MoonPay
-                      </Button>
+                      </div>
                     </div>
                     
                     <div className="text-sm text-muted-foreground space-y-2">
@@ -79,14 +147,17 @@ const MoonPay = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="p-6 bg-muted rounded-lg text-center">
+                    <div 
+                      className="p-6 bg-muted rounded-lg text-center cursor-pointer hover:bg-muted/80 transition-colors"
+                      onClick={() => openMoonPayWidget("sell")}
+                    >
                       <p className="text-muted-foreground mb-4">
-                        MoonPay off-ramp widget will be displayed here (Sandbox)
+                        Click to open MoonPay off-ramp widget
                       </p>
-                      <Button disabled className="gap-2">
-                        <ArrowUpFromLine className="h-4 w-4" />
+                      <div className="flex items-center justify-center gap-2 text-primary font-semibold">
+                        <ArrowUpFromLine className="h-5 w-5" />
                         Sell with MoonPay
-                      </Button>
+                      </div>
                     </div>
                     
                     <div className="text-sm text-muted-foreground space-y-2">
