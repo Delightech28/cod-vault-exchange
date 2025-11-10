@@ -163,8 +163,8 @@ const AccountDetails = () => {
             
             setExistingTransaction(transactionData);
 
-            // Check if user can review (completed transaction)
-            if (transactionData && transactionData.status === "completed") {
+            // Check if user can review (any transaction status except cancelled/disputed)
+            if (transactionData && !["cancelled", "disputed"].includes(transactionData.status)) {
               setCanReview(true);
 
               // Check for existing review
@@ -175,9 +175,11 @@ const AccountDetails = () => {
                 .eq("reviewer_id", user.id)
                 .maybeSingle();
               
-              setExistingReview(reviewData);
-              setReviewRating(reviewData.rating);
-              setReviewComment(reviewData.comment || "");
+              if (reviewData) {
+                setExistingReview(reviewData);
+                setReviewRating(reviewData?.rating || 0);
+                setReviewComment(reviewData?.comment || "");
+              }
             }
           }
         }
