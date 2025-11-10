@@ -24,6 +24,9 @@ import AdminDisputes from "./pages/AdminDisputes";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
 import NotFound from "./pages/NotFound";
 import KycCallback from "./pages/KycCallback";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import MoonPay from "./pages/MoonPay";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +57,9 @@ const App = () => (
           <Route path="/admin/disputes" element={<AdminDisputes />} />
           <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
           <Route path="/kyc/callback" element={<KycCallback />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/moonpay" element={<MoonPay />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
