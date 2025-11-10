@@ -17,7 +17,7 @@ const MoonPay = () => {
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-foreground mb-4">Wallet Management</h1>
             <p className="text-muted-foreground">
-              Buy crypto with card or cash out to your bank account
+              Buy crypto with card using Simplex
             </p>
           </div>
 
@@ -41,18 +41,18 @@ const MoonPay = () => {
                     Buy Cryptocurrency
                   </CardTitle>
                   <CardDescription>
-                    Purchase ETH or USDC on Base network using your card or local payment method
+                    Purchase ETH or USDC on Base network using your card with Simplex
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div className="p-6 bg-muted rounded-lg text-center">
                       <p className="text-muted-foreground mb-4">
-                        MoonPay integration will be displayed here
+                        Simplex integration will be displayed here
                       </p>
                       <Button disabled className="gap-2">
                         <ArrowDownToLine className="h-4 w-4" />
-                        Buy with MoonPay
+                        Buy with Simplex
                       </Button>
                     </div>
                     
@@ -74,25 +74,19 @@ const MoonPay = () => {
                     Sell Cryptocurrency
                   </CardTitle>
                   <CardDescription>
-                    Cash out your ETH or USDC directly to your bank account
+                    Sell functionality coming soon
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div className="p-6 bg-muted rounded-lg text-center">
                       <p className="text-muted-foreground mb-4">
-                        MoonPay off-ramp integration will be displayed here
+                        Sell functionality is not available with Simplex at this time
                       </p>
                       <Button disabled className="gap-2">
                         <ArrowUpFromLine className="h-4 w-4" />
-                        Sell with MoonPay
+                        Coming Soon
                       </Button>
-                    </div>
-                    
-                    <div className="text-sm text-muted-foreground space-y-2">
-                      <p>✓ Direct bank transfers</p>
-                      <p>✓ Competitive exchange rates</p>
-                      <p>✓ Fast processing times</p>
                     </div>
                   </div>
                 </CardContent>
