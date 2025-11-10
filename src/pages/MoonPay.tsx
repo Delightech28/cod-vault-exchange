@@ -17,7 +17,7 @@ const MoonPay = () => {
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-foreground mb-4">Wallet Management</h1>
             <p className="text-muted-foreground">
-              Buy crypto with card using Simplex
+              Buy and sell crypto with MoonPay (Sandbox Mode)
             </p>
           </div>
 
@@ -41,18 +41,18 @@ const MoonPay = () => {
                     Buy Cryptocurrency
                   </CardTitle>
                   <CardDescription>
-                    Purchase ETH or USDC on Base network using your card with Simplex
+                    Purchase ETH or USDC on Base network using MoonPay
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div className="p-6 bg-muted rounded-lg text-center">
                       <p className="text-muted-foreground mb-4">
-                        Simplex integration will be displayed here
+                        MoonPay widget will be displayed here (Sandbox)
                       </p>
                       <Button disabled className="gap-2">
                         <ArrowDownToLine className="h-4 w-4" />
-                        Buy with Simplex
+                        Buy with MoonPay
                       </Button>
                     </div>
                     
@@ -74,19 +74,25 @@ const MoonPay = () => {
                     Sell Cryptocurrency
                   </CardTitle>
                   <CardDescription>
-                    Sell functionality coming soon
+                    Cash out your crypto directly to your bank account with MoonPay
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div className="p-6 bg-muted rounded-lg text-center">
                       <p className="text-muted-foreground mb-4">
-                        Sell functionality is not available with Simplex at this time
+                        MoonPay off-ramp widget will be displayed here (Sandbox)
                       </p>
                       <Button disabled className="gap-2">
                         <ArrowUpFromLine className="h-4 w-4" />
-                        Coming Soon
+                        Sell with MoonPay
                       </Button>
+                    </div>
+                    
+                    <div className="text-sm text-muted-foreground space-y-2">
+                      <p>✓ Direct bank transfers</p>
+                      <p>✓ Competitive exchange rates</p>
+                      <p>✓ Fast processing times</p>
                     </div>
                   </div>
                 </CardContent>
