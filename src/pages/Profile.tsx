@@ -32,6 +32,7 @@ interface ProfileData {
   average_rating: number;
   review_count: number;
   avatar_url?: string | null;
+  wallet_address?: string | null;
 }
 
 export default function Profile() {
@@ -201,6 +202,11 @@ export default function Profile() {
     // Only update phone number if it's not already set
     if (!profile.phone_number && formData.phone_number) {
       updateData.phone_number = formData.phone_number;
+    }
+
+    // Update wallet address if manually entered
+    if (walletError && formData.wallet_address) {
+      updateData.wallet_address = formData.wallet_address;
     }
 
     const { error } = await supabase
@@ -392,7 +398,9 @@ export default function Profile() {
                       <Input
                         id="wallet"
                         value={
-                          walletError 
+                          editing && walletError
+                            ? (formData.wallet_address || '')
+                            : walletError 
                             ? 'Wallet unavailable' 
                             : primaryWallet?.address 
                             ? primaryWallet.address 
@@ -400,12 +408,14 @@ export default function Profile() {
                             ? 'Loading wallet...' 
                             : 'No wallet found'
                         }
-                        disabled
-                        className="bg-muted font-mono text-sm"
+                        onChange={(e) => setFormData({ ...formData, wallet_address: e.target.value })}
+                        disabled={!editing || (!walletError && !!primaryWallet?.address)}
+                        className={!editing || (!walletError && primaryWallet?.address) ? 'bg-muted font-mono text-sm' : 'font-mono text-sm'}
+                        placeholder={walletError ? "Enter your wallet address manually" : ""}
                       />
                       {walletError ? (
                         <p className="text-xs text-destructive">
-                          {walletError}
+                          {walletError} {editing && "You can enter your wallet address manually."}
                         </p>
                       ) : (
                         <p className="text-xs text-muted-foreground">
