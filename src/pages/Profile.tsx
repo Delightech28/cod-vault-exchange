@@ -40,7 +40,7 @@ export default function Profile() {
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<ProfileData>>({});
   const navigate = useNavigate();
-  const { primaryWallet } = usePrivyWallet();
+  const { primaryWallet, isLoading: walletLoading, walletError } = usePrivyWallet();
 
   useEffect(() => {
     checkAuthAndLoadProfile();
@@ -391,13 +391,27 @@ export default function Profile() {
                       <Label htmlFor="wallet">Wallet Address</Label>
                       <Input
                         id="wallet"
-                        value={primaryWallet?.address || 'Loading wallet...'}
+                        value={
+                          walletError 
+                            ? 'Wallet unavailable' 
+                            : primaryWallet?.address 
+                            ? primaryWallet.address 
+                            : walletLoading 
+                            ? 'Loading wallet...' 
+                            : 'No wallet found'
+                        }
                         disabled
                         className="bg-muted font-mono text-sm"
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Automatically created and managed by Privy
-                      </p>
+                      {walletError ? (
+                        <p className="text-xs text-destructive">
+                          {walletError}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Automatically created and managed by Privy
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="joined">Member Since</Label>
