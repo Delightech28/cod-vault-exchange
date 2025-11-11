@@ -16,9 +16,11 @@ export const usePrivyWallet = () => {
         return;
       }
 
-      if (!authenticated || !user) {
-        console.log('User not authenticated');
-        setWalletError('Please log in to access wallet features');
+      // Get current Supabase user first
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      if (!supabaseUser) {
+        console.log('No Supabase user found');
+        setWalletError(null); // Clear error if not logged in
         return;
       }
 
@@ -34,7 +36,7 @@ export const usePrivyWallet = () => {
           setWalletError(null);
         } catch (error) {
           console.error('Failed to create wallet:', error);
-          setWalletError('Unable to create wallet in this environment. Privy may not support iframe embedding.');
+          setWalletError('Unable to create wallet. Please try refreshing the page.');
         } finally {
           setIsCreatingWallet(false);
         }
@@ -43,13 +45,6 @@ export const usePrivyWallet = () => {
 
       const walletAddress = wallets[0].address;
       console.log('Syncing wallet address:', walletAddress);
-
-      // Get current Supabase user
-      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
-      if (!supabaseUser) {
-        console.log('No Supabase user found');
-        return;
-      }
 
       // Update wallet address in profile
       const { error } = await supabase
@@ -72,7 +67,7 @@ export const usePrivyWallet = () => {
     };
 
     syncWalletAddress();
-  }, [ready, authenticated, user, wallets, createWallet]);
+  }, [ready, wallets, createWallet]);
 
   return {
     wallets,
