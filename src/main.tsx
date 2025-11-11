@@ -3,11 +3,9 @@ import { PrivyProvider } from "@privy-io/react-auth";
 import App from "./App.tsx";
 import "./index.css";
 
-const privyAppId = import.meta.env.VITE_PRIVY_APP_ID;
-
 createRoot(document.getElementById("root")!).render(
   <PrivyProvider
-    appId={privyAppId}
+    appId="cmhszwtsh01r4la0bda59w4q8"
     config={{
       appearance: {
         theme: "dark",
