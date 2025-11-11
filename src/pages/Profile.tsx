@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { usePrivyWallet } from '@/hooks/use-privy-wallet';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,6 +40,7 @@ export default function Profile() {
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<ProfileData>>({});
   const navigate = useNavigate();
+  const { primaryWallet } = usePrivyWallet();
 
   useEffect(() => {
     checkAuthAndLoadProfile();
@@ -384,6 +386,18 @@ export default function Profile() {
                       {profile.phone_number && (
                         <p className="text-xs text-muted-foreground">Phone number can only be set once</p>
                       )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="wallet">Wallet Address</Label>
+                      <Input
+                        id="wallet"
+                        value={primaryWallet?.address || 'Loading wallet...'}
+                        disabled
+                        className="bg-muted font-mono text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Automatically created and managed by Privy
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="joined">Member Since</Label>
