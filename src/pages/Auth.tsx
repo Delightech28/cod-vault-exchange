@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,87 +8,56 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import EmailVerificationModal from "@/components/EmailVerificationModal";
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
-  const [signInData, setSignInData] = useState({ email: "", password: "" });
+  const [signInData, setSignInData] = useState({ email: "" });
   const [signUpData, setSignUpData] = useState({ 
     name: "", 
-    email: "", 
-    password: "", 
-    confirmPassword: "" 
+    email: ""
   });
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
-  const [verificationUserId, setVerificationUserId] = useState("");
   const navigate = useNavigate();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: signInData.email,
-      password: signInData.password,
-    });
-
-    setLoading(false);
-
-    if (error) {
-      toast({
-        title: "Sign in failed",
-        description: error.message,
-        variant: "destructive",
+    try {
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: signInData.email })
       });
-      return;
-    }
 
-    // Check if email is verified
-    if (data.user) {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('email_verified')
-        .eq('user_id', data.user.id)
-        .single();
+      const json = await res.json();
+      setLoading(false);
 
-      if (!profileError && profile && !profile.email_verified) {
-        setVerificationEmail(signInData.email);
-        setVerificationUserId(data.user.id);
-        setShowVerificationModal(true);
+      if (json.error) {
         toast({
-          title: "Email not verified",
-          description: "Please verify your email to continue",
+          title: "Sign in failed",
+          description: json.error,
           variant: "destructive",
         });
         return;
       }
-    }
 
-    toast({
-      title: "Welcome back!",
-      description: "Redirecting to dashboard...",
-    });
-
-    navigate('/dashboard');
-  };
-
-  const handleOAuthSignIn = async (provider: 'google' | 'apple') => {
-    setLoading(true);
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: provider,
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+      if (json.token) {
+        localStorage.setItem('auth_token', json.token);
+        toast({
+          title: "Welcome back!",
+          description: "Redirecting to dashboard...",
+        });
+        navigate('/dashboard');
       }
-    });
-
-    setLoading(false);
-
-    if (error) {
+    } catch (err: any) {
+      setLoading(false);
       toast({
         title: "Sign in failed",
-        description: error.message,
+        description: err.message || "Something went wrong",
         variant: "destructive",
       });
     }
@@ -97,55 +65,42 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (signUpData.password !== signUpData.confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Passwords do not match",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (signUpData.password.length < 6) {
-      toast({
-        title: "Error",
-        description: "Password must be at least 6 characters",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signUp({
-      email: signUpData.email,
-      password: signUpData.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/onboarding`,
-        data: {
-          full_name: signUpData.name,
-        }
+    try {
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: signUpData.email, name: signUpData.name })
+      });
+
+      const json = await res.json();
+      setLoading(false);
+
+      if (json.error) {
+        toast({
+          title: "Sign up failed",
+          description: json.error,
+          variant: "destructive",
+        });
+        return;
       }
-    });
 
-    setLoading(false);
-
-    if (error) {
+      if (json.token) {
+        localStorage.setItem('auth_token', json.token);
+        toast({
+          title: "Account created!",
+          description: "Redirecting to complete your profile...",
+        });
+        navigate('/onboarding');
+      }
+    } catch (err: any) {
+      setLoading(false);
       toast({
         title: "Sign up failed",
-        description: error.message,
+        description: err.message || "Something went wrong",
         variant: "destructive",
       });
-      return;
-    }
-
-    if (data.user) {
-      toast({
-        title: "Account created!",
-        description: "Redirecting to complete your profile...",
-      });
-      navigate('/onboarding');
     }
   };
 
@@ -193,26 +148,6 @@ export default function Auth() {
                         placeholder="your.email@example.com"
                         value={signInData.email}
                         onChange={(e) => setSignInData({...signInData, email: e.target.value})}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="signin-password">Password</Label>
-                        <Link 
-                          to="/forgot-password"
-                          className="text-xs text-primary hover:underline"
-                        >
-                          Forgot password?
-                        </Link>
-                      </div>
-                      <Input
-                        id="signin-password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={signInData.password}
-                        onChange={(e) => setSignInData({...signInData, password: e.target.value})}
                         required
                       />
                     </div>
@@ -300,30 +235,6 @@ export default function Auth() {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-password">Password</Label>
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={signUpData.password}
-                        onChange={(e) => setSignUpData({...signUpData, password: e.target.value})}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-confirm">Confirm Password</Label>
-                      <Input
-                        id="signup-confirm"
-                        type="password"
-                        placeholder="••••••••"
-                        value={signUpData.confirmPassword}
-                        onChange={(e) => setSignUpData({...signUpData, confirmPassword: e.target.value})}
-                        required
-                      />
-                    </div>
-
                     <div className="text-xs text-muted-foreground">
                       By creating an account, you agree to our Terms of Service and Privacy Policy.
                     </div>
@@ -332,46 +243,6 @@ export default function Auth() {
                       {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Create Account
                     </Button>
-
-                    <div className="relative my-6">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t border-border" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => handleOAuthSignIn('google')}
-                        disabled={loading}
-                      >
-                        <img 
-                          src="https://www.google.com/favicon.ico" 
-                          alt="Google" 
-                          className="w-5 h-5 mr-2"
-                        />
-                        Google
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => handleOAuthSignIn('apple')}
-                        disabled={loading}
-                      >
-                        <img 
-                          src="https://www.apple.com/favicon.ico" 
-                          alt="Apple" 
-                          className="w-5 h-5 mr-2"
-                        />
-                        Apple
-                      </Button>
-                    </div>
                   </form>
                 </CardContent>
               </Card>
@@ -379,14 +250,6 @@ export default function Auth() {
           </Tabs>
         </div>
       </main>
-
-      <EmailVerificationModal
-        isOpen={showVerificationModal}
-        onClose={() => setShowVerificationModal(false)}
-        email={verificationEmail}
-        userId={verificationUserId}
-        onVerified={handleVerificationComplete}
-      />
     </div>
   );
 }
