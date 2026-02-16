@@ -4,6 +4,23 @@
 
 // Lightweight adapter that replaces Supabase client with HTTP API calls
 const API_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:4000';
+import { io as ioClient, Socket } from 'socket.io-client';
+
+// Singleton socket instance
+let socket: Socket | null = null;
+function getSocket() {
+  if (!socket) {
+    try {
+      socket = ioClient(API_URL);
+      socket.on('connect', () => console.log('socket connected', socket?.id));
+      socket.on('connect_error', (err) => console.warn('socket connect_error', err));
+    } catch (e) {
+      console.warn('socket.io init error', e);
+      socket = null;
+    }
+  }
+  return socket;
+}
 
 function makeBuilder(collection: string) {
   const filters: Record<string, any> = {};
@@ -55,6 +72,17 @@ export const supabase = {
       const res = await fetch(`${API_URL}/auth/user`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       const json = await res.json();
       return { data: { user: json.user ?? null } };
+    },
+    getSession: async () => {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return { data: { session: null } };
+      try {
+        const res = await fetch(`${API_URL}/auth/user`, { headers: { Authorization: `Bearer ${token}` } });
+        const json = await res.json();
+        return { data: { session: { user: json.user ?? null, access_token: token } } };
+      } catch (e) {
+        return { data: { session: null } };
+      }
     },
     login: async ({ email, name }: { email: string, name?: string }) => {
       const res = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, name }) });
@@ -111,16 +139,38 @@ export const supabase = {
       return { data: json };
     }
   },
+  // Minimal storage stub to avoid runtime errors; implement server endpoints if needed.
+  storage: {
+    from: (bucket: string) => ({
+      upload: async (_path: string, _file: any, _opts?: any) => ({ data: null, error: { message: 'Storage upload not implemented on adapter. Implement server storage endpoints.' } }),
+      createSignedUrl: async (_path: string, _opts?: any) => ({ data: null, error: { message: 'Signed URL not implemented' } }),
+    })
+  },
   channel: (name: string) => {
-    const listeners: Array<(...args:any[]) => void> = [];
+    const socket = getSocket();
+    const listeners: Array<{ eventName: string, handler: (...args:any[]) => void }> = [];
     const ch = {
       name,
-      on: (_eventType: string, _opts: any, handler: (...args:any[]) => void) => {
-        listeners.push(handler);
+      on: (_eventType: string, opts: any, handler: (...args:any[]) => void) => {
+        // support Supabase 'postgres_changes' event shape: { event, schema, table }
+        if (_eventType === 'postgres_changes' && opts && opts.table) {
+          const events = opts.event === '*' ? ['INSERT', 'UPDATE', 'DELETE'] : [opts.event];
+          events.forEach((evt: string) => {
+            const eventName = `${opts.table}:${evt}`;
+            const fn = (...args:any[]) => handler(...args);
+            listeners.push({ eventName, handler: fn });
+            try { socket?.on(eventName, fn); } catch(e){}
+          });
+        }
         return ch;
       },
       subscribe: async () => ({ status: 'SUBSCRIBED' }),
-      unsubscribe: () => { listeners.length = 0; }
+      unsubscribe: () => {
+        listeners.forEach(({ eventName, handler }) => {
+          try { socket?.off(eventName, handler); } catch(e){}
+        });
+        listeners.length = 0;
+      }
     } as any;
     return ch;
   },

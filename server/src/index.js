@@ -8,6 +8,8 @@ const User = require('./models/user');
 const app = express();
 app.use(cors());
 app.use(express.json());
+const http = require('http');
+const { Server } = require('socket.io');
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/cod-vault';
 const PORT = process.env.PORT || 4000;
@@ -17,6 +19,16 @@ mongoose.connect(MONGODB_URI, {
   useUnifiedTopology: true,
 }).then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: '*' }
+});
+
+io.on('connection', (socket) => {
+  console.log('Socket connected:', socket.id);
+  socket.on('disconnect', () => console.log('Socket disconnected:', socket.id));
+});
 
 // Signup: POST /auth/signup { email, name, password }
 app.post('/auth/signup', async (req, res) => {
@@ -100,6 +112,7 @@ app.post('/api/:collection', async (req, res) => {
   const { collection } = req.params;
   const Model = mongoose.model(collection, new mongoose.Schema({}, { strict: false }), collection);
   const doc = await Model.create(req.body);
+  try { io.emit(`${collection}:INSERT`, doc); } catch(e){}
   res.json({ data: doc });
 });
 
@@ -107,6 +120,7 @@ app.put('/api/:collection/:id', async (req, res) => {
   const { collection, id } = req.params;
   const Model = mongoose.model(collection, new mongoose.Schema({}, { strict: false }), collection);
   const doc = await Model.findByIdAndUpdate(id, req.body, { new: true }).lean();
+  try { io.emit(`${collection}:UPDATE`, doc); } catch(e){}
   res.json({ data: doc });
 });
 
@@ -114,6 +128,7 @@ app.delete('/api/:collection/:id', async (req, res) => {
   const { collection, id } = req.params;
   const Model = mongoose.model(collection, new mongoose.Schema({}, { strict: false }), collection);
   await Model.findByIdAndDelete(id);
+  try { io.emit(`${collection}:DELETE`, { id }); } catch(e){}
   res.json({ success: true });
 });
 
@@ -124,4 +139,4 @@ app.post('/functions/:name', async (req, res) => {
   res.json({ name, body: req.body });
 });
 
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
