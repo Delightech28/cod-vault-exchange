@@ -142,8 +142,53 @@ export const supabase = {
   // Minimal storage stub to avoid runtime errors; implement server endpoints if needed.
   storage: {
     from: (bucket: string) => ({
-      upload: async (_path: string, _file: any, _opts?: any) => ({ data: null, error: { message: 'Storage upload not implemented on adapter. Implement server storage endpoints.' } }),
-      createSignedUrl: async (_path: string, _opts?: any) => ({ data: null, error: { message: 'Signed URL not implemented' } }),
+      upload: async (path: string, file: any, _opts?: any) => {
+        try {
+          const form = new FormData();
+          // `file` may be a File/Blob or a string (base64) depending on callers
+          if (typeof File !== 'undefined' && file instanceof File) {
+            form.append('file', file, file.name || 'file');
+          } else if (file && file.buffer) {
+            // node-style buffer (unlikely in browser)
+            form.append('file', new Blob([file.buffer]), file.originalname || 'file');
+          } else if (file instanceof Blob) {
+            form.append('file', file, 'file');
+          } else {
+            // try to convert string
+            const blob = new Blob([String(file || '')]);
+            form.append('file', blob, 'file');
+          }
+          form.append('bucket', bucket);
+          form.append('path', path);
+          const res = await fetch(`${API_URL}/storage/upload`, { method: 'POST', body: form });
+          const json = await res.json();
+          if (json.error) return { data: null, error: json };
+          return { data: json.data };
+        } catch (err: any) {
+          return { data: null, error: { message: err?.message || String(err) } };
+        }
+      },
+      getPublicUrl: async (path: string) => {
+        try {
+          const params = new URLSearchParams({ bucket, path });
+          const res = await fetch(`${API_URL}/storage/publicUrl?${params.toString()}`);
+          const json = await res.json();
+          return { data: json.data };
+        } catch (err: any) {
+          return { data: null, error: { message: err?.message || String(err) } };
+        }
+      },
+      createSignedUrl: async (path: string, opts?: any) => {
+        try {
+          const params = new URLSearchParams({ bucket, path });
+          if (opts?.expires) params.set('expires', String(opts.expires));
+          const res = await fetch(`${API_URL}/storage/signedUrl?${params.toString()}`);
+          const json = await res.json();
+          return { data: json.data };
+        } catch (err: any) {
+          return { data: null, error: { message: err?.message || String(err) } };
+        }
+      }
     })
   },
   channel: (name: string) => {

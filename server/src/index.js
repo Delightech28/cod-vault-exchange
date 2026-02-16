@@ -10,6 +10,8 @@ app.use(cors());
 app.use(express.json());
 const http = require('http');
 const { Server } = require('socket.io');
+const multer = require('multer');
+const { ObjectId, GridFSBucket } = require('mongodb');
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/cod-vault';
 const PORT = process.env.PORT || 4000;
@@ -130,6 +132,90 @@ app.delete('/api/:collection/:id', async (req, res) => {
   await Model.findByIdAndDelete(id);
   try { io.emit(`${collection}:DELETE`, { id }); } catch(e){}
   res.json({ success: true });
+});
+
+// Storage endpoints (GridFS + multer)
+const upload = multer({ storage: multer.memoryStorage() });
+
+// Ensure GridFSBucket after connection
+let gridBucket = null;
+mongoose.connection.once('open', () => {
+  gridBucket = new GridFSBucket(mongoose.connection.db, { bucketName: 'uploads' });
+});
+
+// Upload file: multipart form, fields: bucket, path, file
+app.post('/storage/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!gridBucket) return res.status(500).json({ error: 'storage not ready' });
+    const file = req.file;
+    const { bucket = 'default', path = file?.originalname || 'file' } = req.body || {};
+    if (!file) return res.status(400).json({ error: 'file required' });
+
+    const uploadStream = gridBucket.openUploadStream(file.originalname, {
+      contentType: file.mimetype,
+      metadata: { bucket, path }
+    });
+    uploadStream.end(file.buffer);
+    uploadStream.on('finish', (f) => {
+      const id = f._id.toString();
+      const publicUrl = `${req.protocol}://${req.get('host')}/storage/file/${id}`;
+      return res.json({ data: { id, filename: f.filename, path: f.metadata.path, publicUrl } });
+    });
+    uploadStream.on('error', (err) => res.status(500).json({ error: err.message }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Serve file by id
+app.get('/storage/file/:id', async (req, res) => {
+  try {
+    if (!gridBucket) return res.status(500).send('storage not ready');
+    const { id } = req.params;
+    const _id = ObjectId.isValid(id) ? new ObjectId(id) : null;
+    if (!_id) return res.status(400).send('invalid id');
+    const filesColl = mongoose.connection.db.collection('uploads.files');
+    const fileDoc = await filesColl.findOne({ _id });
+    if (!fileDoc) return res.status(404).send('not found');
+    res.setHeader('Content-Type', fileDoc.contentType || 'application/octet-stream');
+    const downloadStream = gridBucket.openDownloadStream(_id);
+    downloadStream.on('error', () => res.status(404).end());
+    downloadStream.pipe(res);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+// Get public URL by bucket+path
+app.get('/storage/publicUrl', async (req, res) => {
+  try {
+    const { bucket = 'default', path } = req.query;
+    if (!path) return res.status(400).json({ error: 'path required' });
+    const filesColl = mongoose.connection.db.collection('uploads.files');
+    const fileDoc = await filesColl.findOne({ 'metadata.bucket': bucket, 'metadata.path': String(path) });
+    if (!fileDoc) return res.status(404).json({ data: { publicUrl: null } });
+    const id = fileDoc._id.toString();
+    const publicUrl = `${req.protocol}://${req.get('host')}/storage/file/${id}`;
+    res.json({ data: { publicUrl } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create signed URL (simple passthrough to public URL for now)
+app.get('/storage/signedUrl', async (req, res) => {
+  try {
+    const { bucket = 'default', path } = req.query;
+    if (!path) return res.status(400).json({ error: 'path required' });
+    const filesColl = mongoose.connection.db.collection('uploads.files');
+    const fileDoc = await filesColl.findOne({ 'metadata.bucket': bucket, 'metadata.path': String(path) });
+    if (!fileDoc) return res.status(404).json({ data: { signedUrl: null } });
+    const id = fileDoc._id.toString();
+    const signedUrl = `${req.protocol}://${req.get('host')}/storage/file/${id}`;
+    res.json({ data: { signedUrl } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Placeholder for server-side functions that used to be Supabase Functions
