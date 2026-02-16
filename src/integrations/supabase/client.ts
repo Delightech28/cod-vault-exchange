@@ -60,7 +60,46 @@ export const supabase = {
       const res = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, name }) });
       const json = await res.json();
       if (json.token) localStorage.setItem('auth_token', json.token);
+      // notify other parts of the app
+      try { window.dispatchEvent(new Event('supabase-login')); } catch(e){}
       return { data: { user: json.user, token: json.token } };
+    },
+    signOut: async () => {
+      localStorage.removeItem('auth_token');
+      try { window.dispatchEvent(new Event('supabase-logout')); } catch(e){}
+      return { error: null };
+    },
+    onAuthStateChange: (callback: (event: string, session: any) => void) => {
+      const handler = async () => {
+        const token = localStorage.getItem('auth_token');
+        let user = null;
+        if (token) {
+          try {
+            const res = await fetch(`${API_URL}/auth/user`, { headers: { Authorization: `Bearer ${token}` } });
+            const json = await res.json();
+            user = json.user ?? null;
+          } catch (e) {
+            user = null;
+          }
+        }
+        const session = user ? { access_token: token, user } : null;
+        callback(user ? 'SIGNED_IN' : 'SIGNED_OUT', session);
+      };
+
+      const storageListener = (e: StorageEvent) => {
+        if (e.key === 'auth_token') handler();
+      };
+      window.addEventListener('storage', storageListener);
+      const loginListener = () => handler();
+      window.addEventListener('supabase-login', loginListener as EventListener);
+      const logoutListener = () => handler();
+      window.addEventListener('supabase-logout', logoutListener as EventListener);
+
+      return { data: { subscription: { unsubscribe: () => {
+        window.removeEventListener('storage', storageListener);
+        window.removeEventListener('supabase-login', loginListener as EventListener);
+        window.removeEventListener('supabase-logout', logoutListener as EventListener);
+      } } } };
     }
   },
   from: (collection: string) => makeBuilder(collection),
@@ -72,7 +111,20 @@ export const supabase = {
       return { data: json };
     }
   },
-  removeChannel: (_: any) => {},
+  channel: (name: string) => {
+    const listeners: Array<(...args:any[]) => void> = [];
+    const ch = {
+      name,
+      on: (_eventType: string, _opts: any, handler: (...args:any[]) => void) => {
+        listeners.push(handler);
+        return ch;
+      },
+      subscribe: async () => ({ status: 'SUBSCRIBED' }),
+      unsubscribe: () => { listeners.length = 0; }
+    } as any;
+    return ch;
+  },
+  removeChannel: (ch: any) => { try { ch?.unsubscribe?.(); } catch(e){} },
   rpc: async (path: string, body?: any) => {
     const token = localStorage.getItem('auth_token');
     const res = await fetch(`${API_URL}/${path}`, { method: body ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined });

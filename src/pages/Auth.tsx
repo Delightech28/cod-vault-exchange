@@ -13,13 +13,13 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
-  const [signInData, setSignInData] = useState({ email: "" });
+  const [signInData, setSignInData] = useState({ email: "", password: "" });
   const [signUpData, setSignUpData] = useState({ 
     name: "", 
-    email: ""
+    email: "",
+    password: "",
+    confirmPassword: ""
   });
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [verificationEmail, setVerificationEmail] = useState("");
   const navigate = useNavigate();
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -30,7 +30,7 @@ export default function Auth() {
       const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: signInData.email })
+        body: JSON.stringify({ email: signInData.email, password: signInData.password })
       });
 
       const json = await res.json();
@@ -67,40 +67,38 @@ export default function Auth() {
     e.preventDefault();
     setLoading(true);
 
+    if (signUpData.password !== signUpData.confirmPassword) {
+      toast({ title: 'Error', description: 'Passwords do not match', variant: 'destructive' });
+      return;
+    }
+    if (signUpData.password.length < 6) {
+      toast({ title: 'Error', description: 'Password must be at least 6 characters', variant: 'destructive' });
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_URL}/auth/login`, {
+      const res = await fetch(`${API_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: signUpData.email, name: signUpData.name })
+        body: JSON.stringify({ email: signUpData.email, name: signUpData.name, password: signUpData.password })
       });
 
       const json = await res.json();
       setLoading(false);
 
       if (json.error) {
-        toast({
-          title: "Sign up failed",
-          description: json.error,
-          variant: "destructive",
-        });
+        toast({ title: 'Sign up failed', description: json.error, variant: 'destructive' });
         return;
       }
 
       if (json.token) {
         localStorage.setItem('auth_token', json.token);
-        toast({
-          title: "Account created!",
-          description: "Redirecting to complete your profile...",
-        });
+        toast({ title: 'Account created!', description: 'Redirecting to complete your profile...' });
         navigate('/onboarding');
       }
     } catch (err: any) {
       setLoading(false);
-      toast({
-        title: "Sign up failed",
-        description: err.message || "Something went wrong",
-        variant: "destructive",
-      });
+      toast({ title: 'Sign up failed', description: err.message || 'Something went wrong', variant: 'destructive' });
     }
   };
 
@@ -152,50 +150,24 @@ export default function Auth() {
                       />
                     </div>
 
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-password">Password</Label>
+                      <Input
+                        id="signin-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={signInData.password}
+                        onChange={(e) => setSignInData({...signInData, password: e.target.value})}
+                        required
+                      />
+                    </div>
+
                     <Button type="submit" className="w-full" disabled={loading}>
                       {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Sign In
                     </Button>
 
-                    <div className="relative my-6">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t border-border" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => handleOAuthSignIn('google')}
-                        disabled={loading}
-                      >
-                        <img 
-                          src="https://www.google.com/favicon.ico" 
-                          alt="Google" 
-                          className="w-5 h-5 mr-2"
-                        />
-                        Google
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => handleOAuthSignIn('apple')}
-                        disabled={loading}
-                      >
-                        <img 
-                          src="https://www.apple.com/favicon.ico" 
-                          alt="Apple" 
-                          className="w-5 h-5 mr-2"
-                        />
-                        Apple
-                      </Button>
-                    </div>
+                    
                   </form>
                 </CardContent>
               </Card>
@@ -231,6 +203,30 @@ export default function Auth() {
                         placeholder="your.email@example.com"
                         value={signUpData.email}
                         onChange={(e) => setSignUpData({...signUpData, email: e.target.value})}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">Password</Label>
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={signUpData.password}
+                        onChange={(e) => setSignUpData({...signUpData, password: e.target.value})}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-confirm">Confirm Password</Label>
+                      <Input
+                        id="signup-confirm"
+                        type="password"
+                        placeholder="••••••••"
+                        value={signUpData.confirmPassword}
+                        onChange={(e) => setSignUpData({...signUpData, confirmPassword: e.target.value})}
                         required
                       />
                     </div>
