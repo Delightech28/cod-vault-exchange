@@ -28,13 +28,52 @@ function makeBuilder(collection: string) {
   let _single = false;
   let _orderField: string | null = null;
   let _orderAsc = true;
+  let _id: string | null = null;
 
   const builder: any = {
     select: (_sel?: string) => builder,
-    eq: (field: string, val: any) => { filters[field] = val; return builder; },
+    eq: (field: string, val: any) => { 
+      if (field === 'id') {
+        _id = String(val);
+      } else {
+        filters[field] = val;
+      }
+      return builder;
+    },
     order: (field: string, opts?: { ascending?: boolean }) => { _orderField = field; _orderAsc = opts?.ascending ?? true; return builder; },
     limit: (n: number) => { _limit = n; return builder; },
     single: () => { _single = true; return builder.execute(); },
+    update: async (data: any) => {
+      if (!_id) throw new Error('update requires id (use .eq("id", value))');
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch(`${API_URL}/api/${collection}/${_id}`, { 
+        method: 'PUT', 
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(data)
+      });
+      const json = await res.json();
+      return { data: json.data };
+    },
+    delete: async () => {
+      if (!_id) throw new Error('delete requires id (use .eq("id", value))');
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch(`${API_URL}/api/${collection}/${_id}`, { 
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      const json = await res.json();
+      return { data: json };
+    },
+    insert: async (data: any) => {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch(`${API_URL}/api/${collection}`, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(data)
+      });
+      const json = await res.json();
+      return { data: json.data };
+    },
     execute: async () => {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([k, v]) => params.append(k, String(v)));

@@ -85,13 +85,21 @@ app.get('/auth/user', async (req, res) => {
   }
 });
 
+// Helper to get or create model for a collection
+function getModel(collection) {
+  if (mongoose.models[collection]) {
+    return mongoose.models[collection];
+  }
+  return mongoose.model(collection, new mongoose.Schema({}, { strict: false }), collection);
+}
+
 // Generic collection endpoints (simple)
 app.get('/api/:collection', async (req, res) => {
   const { collection } = req.params;
-  const Model = mongoose.model(collection, new mongoose.Schema({}, { strict: false }), collection);
+  const Model = getModel(collection);
   // Build filter from query params (except reserved params)
   const { limit, sort, order, ...filters } = req.query;
-  const query: any = {};
+  const query = {};
   Object.entries(filters).forEach(([k, v]) => { query[k] = v; });
   let q = Model.find(query).lean();
   if (sort) {
@@ -105,14 +113,14 @@ app.get('/api/:collection', async (req, res) => {
 
 app.get('/api/:collection/:id', async (req, res) => {
   const { collection, id } = req.params;
-  const Model = mongoose.model(collection, new mongoose.Schema({}, { strict: false }), collection);
+  const Model = getModel(collection);
   const doc = await Model.findById(id).lean();
   res.json({ data: doc });
 });
 
 app.post('/api/:collection', async (req, res) => {
   const { collection } = req.params;
-  const Model = mongoose.model(collection, new mongoose.Schema({}, { strict: false }), collection);
+  const Model = getModel(collection);
   const doc = await Model.create(req.body);
   try { io.emit(`${collection}:INSERT`, doc); } catch(e){}
   res.json({ data: doc });
@@ -120,7 +128,7 @@ app.post('/api/:collection', async (req, res) => {
 
 app.put('/api/:collection/:id', async (req, res) => {
   const { collection, id } = req.params;
-  const Model = mongoose.model(collection, new mongoose.Schema({}, { strict: false }), collection);
+  const Model = getModel(collection);
   const doc = await Model.findByIdAndUpdate(id, req.body, { new: true }).lean();
   try { io.emit(`${collection}:UPDATE`, doc); } catch(e){}
   res.json({ data: doc });
@@ -128,7 +136,7 @@ app.put('/api/:collection/:id', async (req, res) => {
 
 app.delete('/api/:collection/:id', async (req, res) => {
   const { collection, id } = req.params;
-  const Model = mongoose.model(collection, new mongoose.Schema({}, { strict: false }), collection);
+  const Model = getModel(collection);
   await Model.findByIdAndDelete(id);
   try { io.emit(`${collection}:DELETE`, { id }); } catch(e){}
   res.json({ success: true });
