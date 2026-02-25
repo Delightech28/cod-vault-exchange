@@ -249,7 +249,37 @@ app.get('/storage/signedUrl', async (req, res) => {
 // Placeholder for server-side functions that used to be Supabase Functions
 app.post('/functions/:name', async (req, res) => {
   const { name } = req.params;
-  // Implement function handlers as needed. For now, echo.
+
+  if (name === 'send-verification-code') {
+    try {
+      if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({ error: 'Database connection is not ready' });
+      }
+      const { email, userId } = req.body;
+      if (!email || !userId) return res.status(400).json({ error: 'Email and userId required' });
+
+      // Generate 6-digit code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+      const CodeModel = getModel('email_verification_codes');
+      await CodeModel.create({
+        user_id: userId,
+        code: code,
+        expires_at: expiresAt,
+        verified: false,
+        created_at: new Date()
+      });
+
+      console.log(`🔐 [VERIFICATION] Code for ${email}: ${code}`);
+      return res.json({ success: true, message: 'Verification code sent successfully' });
+    } catch (err) {
+      console.error('Function error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // Fallback for other functions
   res.json({ name, body: req.body });
 });
 
