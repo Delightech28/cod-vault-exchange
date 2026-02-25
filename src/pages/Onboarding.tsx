@@ -25,7 +25,6 @@ export default function Onboarding() {
 
   // Form data
   const [username, setUsername] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [country, setCountry] = useState('');
   const [countryDialCode, setCountryDialCode] = useState('');
@@ -48,11 +47,6 @@ export default function Onboarding() {
     setUserId(user.id);
     setUserEmail(user.email || '');
 
-    // Auto-populate display name from user metadata
-    if (user.user_metadata?.full_name) {
-      setDisplayName(user.user_metadata.full_name);
-    }
-
     // Check if onboarding already completed
     const { data: profile } = await supabase
       .from('profiles')
@@ -73,7 +67,6 @@ export default function Onboarding() {
       .from('profiles')
       .update({
         username,
-        display_name: displayName,
         timezone,
         country,
       })
@@ -110,7 +103,7 @@ export default function Onboarding() {
 
       setCanResend(false);
       setResendTimer(60);
-      
+
       const timer = setInterval(() => {
         setResendTimer((prev) => {
           if (prev <= 1) {
@@ -329,16 +322,6 @@ export default function Onboarding() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="displayName">Display Name</Label>
-                  <Input
-                    id="displayName"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="John Doe"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="country">Country</Label>
                   <CountrySelect
                     value={country}
@@ -433,15 +416,15 @@ export default function Onboarding() {
               </div>
 
               <div className="space-y-3">
-                <Button 
-                  onClick={handleOtpVerify} 
-                  className="w-full" 
+                <Button
+                  onClick={handleOtpVerify}
+                  className="w-full"
                   disabled={loading || otp.length !== 6}
                 >
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Verify Code
                 </Button>
-                
+
                 <Button
                   variant="ghost"
                   className="w-full"
@@ -467,9 +450,8 @@ export default function Onboarding() {
               <div className="grid gap-4">
                 <button
                   onClick={() => setAccountType('buyer')}
-                  className={`p-6 border-2 rounded-lg text-left transition-all hover:border-primary ${
-                    accountType === 'buyer' ? 'border-primary bg-primary/5' : 'border-border'
-                  }`}
+                  className={`p-6 border-2 rounded-lg text-left transition-all hover:border-primary ${accountType === 'buyer' ? 'border-primary bg-primary/5' : 'border-border'
+                    }`}
                 >
                   <div className="flex items-start gap-4">
                     <Wallet className="h-6 w-6 mt-1" />
@@ -484,9 +466,8 @@ export default function Onboarding() {
 
                 <button
                   onClick={() => setAccountType('seller')}
-                  className={`p-6 border-2 rounded-lg text-left transition-all hover:border-primary ${
-                    accountType === 'seller' ? 'border-primary bg-primary/5' : 'border-border'
-                  }`}
+                  className={`p-6 border-2 rounded-lg text-left transition-all hover:border-primary ${accountType === 'seller' ? 'border-primary bg-primary/5' : 'border-border'
+                    }`}
                 >
                   <div className="flex items-start gap-4">
                     <TrendingUp className="h-6 w-6 mt-1" />
@@ -501,9 +482,8 @@ export default function Onboarding() {
 
                 <button
                   onClick={() => setAccountType('both')}
-                  className={`p-6 border-2 rounded-lg text-left transition-all hover:border-primary ${
-                    accountType === 'both' ? 'border-primary bg-primary/5' : 'border-border'
-                  }`}
+                  className={`p-6 border-2 rounded-lg text-left transition-all hover:border-primary ${accountType === 'both' ? 'border-primary bg-primary/5' : 'border-border'
+                    }`}
                 >
                   <div className="flex items-start gap-4">
                     <Shield className="h-6 w-6 mt-1" />
