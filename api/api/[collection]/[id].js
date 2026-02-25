@@ -35,21 +35,40 @@ export default async function handler(req, res) {
     const _id = ObjectId.isValid(id) ? new ObjectId(id) : id;
 
     if (method === 'GET') {
-      const doc = await db.collection(collection).findOne({ _id });
+      let doc = await db.collection(collection).findOne({ _id });
+      if (!doc && !ObjectId.isValid(id)) {
+        // Fallback search by user_id
+        doc = await db.collection(collection).findOne({ user_id: id });
+      }
       return sendJson(res, { data: doc });
     }
 
     if (method === 'PUT') {
-      const result = await db.collection(collection).findOneAndUpdate(
+      let result = await db.collection(collection).findOneAndUpdate(
         { _id },
         { $set: req.body },
         { returnDocument: 'after' }
       );
-      return sendJson(res, { data: result.value });
+
+      let doc = result.value || result; // behavior varies by mongodb driver version
+      if (!doc && !ObjectId.isValid(id)) {
+        // Fallback update by user_id
+        result = await db.collection(collection).findOneAndUpdate(
+          { user_id: id },
+          { $set: req.body },
+          { returnDocument: 'after' }
+        );
+        doc = result.value || result;
+      }
+      return sendJson(res, { data: doc });
     }
 
     if (method === 'DELETE') {
-      await db.collection(collection).deleteOne({ _id });
+      let result = await db.collection(collection).deleteOne({ _id });
+      if (result.deletedCount === 0 && !ObjectId.isValid(id)) {
+        // Fallback delete by user_id
+        await db.collection(collection).deleteOne({ user_id: id });
+      }
       return sendJson(res, { success: true });
     }
 

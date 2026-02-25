@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
-const { connectDB } = require('./lib/db');
-const User = require('./lib/User');
+const { connectDB } = require('../lib/db');
+const User = require('../lib/User');
 
 // Enable CORS header helper
 function setCors(res) {
@@ -39,6 +39,14 @@ export default async function handler(req, res) {
 
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await User.create({ email, name, password: hashedPassword });
+
+      // Create initial profile
+      const db = require('mongoose').connection.db;
+      await db.collection('profiles').insertOne({
+        user_id: user._id.toString(),
+        email: user.email,
+        created_at: new Date()
+      });
 
       const token = user._id.toString();
       return sendJson(res, { token, user: { id: user._id, email: user.email, name: user.name } });

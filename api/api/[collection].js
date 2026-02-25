@@ -1,4 +1,4 @@
-const { connectDB } = require('../../lib/db');
+const { connectDB } = require('../lib/db');
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -38,9 +38,39 @@ export default async function handler(req, res) {
       const q = {};
       Object.entries(filters).forEach(([k, v]) => {
         if (!['collection', 'limit', 'sort', 'order'].includes(k)) {
-          q[k] = v;
+          let val = v;
+          if (v === 'true') val = true;
+          else if (v === 'false') val = false;
+          // Don't cast to number if it's a field known to be a string-id like 'code' or user_id
+          else if (!['code', 'user_id', 'id'].includes(k) && !isNaN(v) && v !== '') {
+            val = Number(v);
+          }
+          q[k] = val;
         }
       });
+
+      // Map 'id' to '_id' for MongoDB
+      if (q.id) {
+        const idVal = q.id;
+        delete q.id;
+        try {
+          const { ObjectId } = require('mongodb');
+          if (ObjectId.isValid(idVal)) {
+            q._id = new ObjectId(idVal);
+          } else {
+            q._id = idVal;
+          }
+        } catch (e) {
+          q._id = idVal;
+        }
+      }
+
+      // Special handling for email verification codes check to ensure string match
+      if (collection === 'email_verification_codes' && q.code) {
+        q.code = String(q.code);
+      }
+
+      console.log(`🔍 [VERCEL API] GET ${collection} query:`, JSON.stringify(q));
 
       let cursor = db.collection(collection).find(q);
       if (sort) {

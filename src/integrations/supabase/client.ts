@@ -21,6 +21,12 @@ function getSocket() {
   }
   return socket;
 }
+const mapId = (obj: any) => {
+  if (obj && obj._id && !obj.id) {
+    obj.id = String(obj._id);
+  }
+  return obj;
+};
 
 function makeBuilder(collection: string) {
   const filters: Record<string, any> = {};
@@ -36,9 +42,6 @@ function makeBuilder(collection: string) {
     select: (_sel?: string) => { _method = 'GET'; return builder; },
     eq: (field: string, val: any) => {
       if (field === 'id') {
-        _id = String(val);
-      } else if (field === 'user_id' && collection === 'profiles') {
-        // Special case for profiles to treat user_id as lookup key if id not provided
         _id = String(val);
       } else {
         filters[field] = val;
@@ -91,11 +94,14 @@ function makeBuilder(collection: string) {
             });
           }
           if (_limit) data = data.slice(0, _limit);
+          data = data.map(mapId);
           if (_single) data = data[0] ?? null;
+        } else {
+          data = mapId(data);
         }
         return { data, error: json.error ? { message: json.error } : null };
       } else if (_method === 'PUT') {
-        const targetId = _id || filters.id;
+        const targetId = _id || filters.id || (collection === 'profiles' ? filters.user_id : null);
         if (!targetId) return { data: null, error: { message: 'Update requires an ID. Use .eq("id", value) or .eq("user_id", value) for profiles.' } };
 
         const res = await fetch(`${API_URL}/api/${collection}/${targetId}`, {
@@ -106,7 +112,7 @@ function makeBuilder(collection: string) {
         const json = await res.json();
         return { data: json.data, error: json.error ? { message: json.error } : null };
       } else if (_method === 'DELETE') {
-        const targetId = _id || filters.id;
+        const targetId = _id || filters.id || (collection === 'profiles' ? filters.user_id : null);
         if (!targetId) return { data: null, error: { message: 'Delete requires an ID' } };
 
         const res = await fetch(`${API_URL}/api/${collection}/${targetId}`, {
@@ -144,10 +150,23 @@ function makeBuilder(collection: string) {
 export const supabase = {
   auth: {
     getUser: async () => {
-      const token = localStorage.getItem('auth_token');
-      const res = await fetch(`${API_URL}/auth/user`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-      const json = await res.json();
-      return { data: { user: json.user ?? null } };
+      try {
+        const token = localStorage.getItem('auth_token');
+        const res = await fetch(`${API_URL}/auth/user`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await res.text();
+          console.error('❌ getUser non-JSON response:', text.slice(0, 100));
+          return { data: { user: null } };
+        }
+
+        const json = await res.json();
+        return { data: { user: json.user ?? null } };
+      } catch (e) {
+        console.error('🔥 getUser error:', e);
+        return { data: { user: null } };
+      }
     },
     getSession: async () => {
       const token = localStorage.getItem('auth_token');
@@ -163,38 +182,62 @@ export const supabase = {
     },
     signUp: async ({ email, password, name }: { email: string, password?: string, name?: string }) => {
       try {
+        console.log('📝 Signup attempt for:', email);
         const res = await fetch(`${API_URL}/auth/signup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password, name })
         });
+
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await res.text();
+          console.error('❌ Server error (non-JSON):', text);
+          return { data: { user: null, token: null }, error: { message: `Server error: ${text.slice(0, 50)}...` } };
+        }
+
         const json = await res.json();
         if (!res.ok) {
+          console.warn('⚠️ Signup failed:', json.error);
           return { data: { user: null, token: null }, error: { message: json.error || 'Sign up failed' } };
         }
         if (json.token) localStorage.setItem('auth_token', json.token);
+        console.log('✅ Signup success');
         try { window.dispatchEvent(new Event('supabase-login')); } catch (e) { }
         return { data: { user: json.user, token: json.token }, error: null };
       } catch (err: any) {
+        console.error('🔥 Signup network error:', err);
         return { data: { user: null, token: null }, error: { message: err.message || 'Network error during signup' } };
       }
     },
     login: async ({ email, password }: { email: string, password?: string }) => {
       try {
+        console.log('🔑 Login attempt for:', email);
         const res = await fetch(`${API_URL}/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
+
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await res.text();
+          console.error('❌ Server error (non-JSON):', text);
+          return { data: { user: null, token: null }, error: { message: `Server error: ${text.slice(0, 50)}...` } };
+        }
+
         const json = await res.json();
         if (!res.ok) {
+          console.warn('⚠️ Login failed:', json.error);
           return { data: { user: null, token: null }, error: { message: json.error || 'Login failed' } };
         }
         if (json.token) localStorage.setItem('auth_token', json.token);
+        console.log('✅ Login success');
         // notify other parts of the app
         try { window.dispatchEvent(new Event('supabase-login')); } catch (e) { }
         return { data: { user: json.user, token: json.token }, error: null };
       } catch (err: any) {
+        console.error('🔥 Login network error:', err);
         return { data: { user: null, token: null }, error: { message: err.message || 'Network error during login' } };
       }
     },

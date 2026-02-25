@@ -47,6 +47,14 @@ app.post('/auth/signup', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     user = await User.create({ email, name, password: hashedPassword });
 
+    // Create initial profile
+    const ProfileModel = getModel('profiles');
+    await ProfileModel.create({
+      user_id: user._id,
+      email: user.email,
+      created_at: new Date()
+    });
+
     const token = user._id.toString();
     return res.json({ token, user: { id: user._id, email: user.email, name: user.name } });
   } catch (err) {
@@ -116,7 +124,34 @@ app.get('/api/:collection', async (req, res) => {
     // Build filter from query params (except reserved params)
     const { limit, sort, order, ...filters } = req.query;
     const query = {};
-    Object.entries(filters).forEach(([k, v]) => { query[k] = v; });
+    Object.entries(filters).forEach(([k, v]) => {
+      let val = v;
+      if (v === 'true') val = true;
+      else if (v === 'false') val = false;
+      // Don't cast to number if it's a field known to be a string-id like 'code' or user_id
+      else if (!['code', 'user_id', 'id'].includes(k) && !isNaN(v) && v !== '') {
+        val = Number(v);
+      }
+      query[k] = val;
+    });
+
+    // Map 'id' to '_id' for MongoDB
+    if (query.id) {
+      const idVal = query.id;
+      delete query.id;
+      if (mongoose.Types.ObjectId.isValid(idVal)) {
+        query._id = new mongoose.Types.ObjectId(idVal);
+      } else {
+        query._id = idVal;
+      }
+    }
+
+    // Special handling for email verification codes check to ensure string match
+    if (collection === 'email_verification_codes' && query.code) {
+      query.code = String(query.code);
+    }
+
+    console.log(`🔍 [API] GET ${collection} query:`, JSON.stringify(query));
     let q = Model.find(query).lean();
     if (sort) {
       const dir = (order === 'desc') ? -1 : 1;
@@ -132,10 +167,17 @@ app.get('/api/:collection', async (req, res) => {
 });
 
 app.get('/api/:collection/:id', async (req, res) => {
-  const { collection, id } = req.params;
-  const Model = getModel(collection);
-  const doc = await Model.findById(id).lean();
-  res.json({ data: doc });
+  try {
+    const { collection, id } = req.params;
+    const Model = getModel(collection);
+    let doc = await Model.findById(id).lean();
+    if (!doc && mongoose.Types.ObjectId.isValid(id) === false) {
+      doc = await Model.findOne({ user_id: id }).lean();
+    }
+    res.json({ data: doc });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/:collection', async (req, res) => {
@@ -147,19 +189,33 @@ app.post('/api/:collection', async (req, res) => {
 });
 
 app.put('/api/:collection/:id', async (req, res) => {
-  const { collection, id } = req.params;
-  const Model = getModel(collection);
-  const doc = await Model.findByIdAndUpdate(id, req.body, { new: true }).lean();
-  try { io.emit(`${collection}:UPDATE`, doc); } catch (e) { }
-  res.json({ data: doc });
+  try {
+    const { collection, id } = req.params;
+    const Model = getModel(collection);
+    let doc = await Model.findByIdAndUpdate(id, req.body, { new: true }).lean();
+    if (!doc && mongoose.Types.ObjectId.isValid(id) === false) {
+      doc = await Model.findOneAndUpdate({ user_id: id }, req.body, { new: true }).lean();
+    }
+    try { io.emit(`${collection}:UPDATE`, doc); } catch (e) { }
+    res.json({ data: doc });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.delete('/api/:collection/:id', async (req, res) => {
-  const { collection, id } = req.params;
-  const Model = getModel(collection);
-  await Model.findByIdAndDelete(id);
-  try { io.emit(`${collection}:DELETE`, { id }); } catch (e) { }
-  res.json({ success: true });
+  try {
+    const { collection, id } = req.params;
+    const Model = getModel(collection);
+    let result = await Model.findByIdAndDelete(id);
+    if (!result && mongoose.Types.ObjectId.isValid(id) === false) {
+      result = await Model.findOneAndDelete({ user_id: id });
+    }
+    try { io.emit(`${collection}:DELETE`, { id }); } catch (e) { }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Storage endpoints (GridFS + multer)

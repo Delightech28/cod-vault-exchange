@@ -50,12 +50,50 @@ export default function Onboarding() {
     // Check if onboarding already completed
     const { data: profile } = await supabase
       .from('profiles')
-      .select('onboarding_completed, email_verified')
+      .select('onboarding_completed, email_verified, username, account_type, country')
       .eq('user_id', user.id)
       .maybeSingle();
 
     if (profile?.onboarding_completed) {
       navigate('/dashboard');
+      return;
+    }
+
+    if (profile) {
+      // Restore form data if available
+      if (profile.username) setUsername(profile.username);
+      if (profile.country) setCountry(profile.country);
+      if (profile.account_type) setAccountType(profile.account_type);
+
+      // Determine the current step
+      if (!profile.username || !profile.country) {
+        setStep('profile');
+      } else if (!profile.email_verified) {
+        // Check if a code was already sent
+        const { data: recentCode } = await supabase
+          .from('email_verification_codes')
+          .select('expires_at')
+          .eq('user_id', user.id)
+          .eq('verified', false)
+          .order('expires_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (recentCode && new Date(recentCode.expires_at) > new Date()) {
+          setStep('verify-otp');
+        } else {
+          setStep('email-verify');
+        }
+      } else if (!profile.account_type) {
+        setStep('account-type');
+      } else {
+        // If they have account type, they moved past it
+        if (profile.account_type === 'seller' || profile.account_type === 'both') {
+          setStep('kyc');
+        } else {
+          setStep('tour');
+        }
+      }
     }
   };
 
