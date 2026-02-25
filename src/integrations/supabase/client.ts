@@ -29,11 +29,16 @@ function makeBuilder(collection: string) {
   let _orderField: string | null = null;
   let _orderAsc = true;
   let _id: string | null = null;
+  let _method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET';
+  let _body: any = null;
 
   const builder: any = {
-    select: (_sel?: string) => builder,
+    select: (_sel?: string) => { _method = 'GET'; return builder; },
     eq: (field: string, val: any) => {
       if (field === 'id') {
+        _id = String(val);
+      } else if (field === 'user_id' && collection === 'profiles') {
+        // Special case for profiles to treat user_id as lookup key if id not provided
         _id = String(val);
       } else {
         filters[field] = val;
@@ -42,63 +47,95 @@ function makeBuilder(collection: string) {
     },
     order: (field: string, opts?: { ascending?: boolean }) => { _orderField = field; _orderAsc = opts?.ascending ?? true; return builder; },
     limit: (n: number) => { _limit = n; return builder; },
-    single: () => { _single = true; return builder.execute(); },
-    update: async (data: any) => {
-      if (!_id) throw new Error('update requires id (use .eq("id", value))');
-      const token = localStorage.getItem('auth_token');
-      const res = await fetch(`${API_URL}/api/${collection}/${_id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify(data)
-      });
-      const json = await res.json();
-      return { data: json.data };
+    single: () => { _single = true; return builder; },
+    maybeSingle: () => { _single = true; return builder; },
+    update: (data: any) => {
+      _method = 'PUT';
+      _body = data;
+      return builder;
     },
-    delete: async () => {
-      if (!_id) throw new Error('delete requires id (use .eq("id", value))');
-      const token = localStorage.getItem('auth_token');
-      const res = await fetch(`${API_URL}/api/${collection}/${_id}`, {
-        method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-      const json = await res.json();
-      return { data: json };
+    delete: () => {
+      _method = 'DELETE';
+      return builder;
     },
-    insert: async (data: any) => {
-      const token = localStorage.getItem('auth_token');
-      const res = await fetch(`${API_URL}/api/${collection}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify(data)
-      });
-      const json = await res.json();
-      return { data: json.data };
+    insert: (data: any) => {
+      _method = 'POST';
+      _body = data;
+      return builder;
     },
     execute: async () => {
-      const params = new URLSearchParams();
-      Object.entries(filters).forEach(([k, v]) => params.append(k, String(v)));
-      if (_limit) params.set('limit', String(_limit));
-      if (_orderField) { params.set('sort', _orderField); params.set('order', _orderAsc ? 'asc' : 'desc'); }
-      const url = `${API_URL}/api/${collection}?${params.toString()}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      let data = json.data ?? json;
-      if (_orderField) {
-        data = data.sort((a: any, b: any) => {
-          if (a[_orderField] < b[_orderField]) return _orderAsc ? -1 : 1;
-          if (a[_orderField] > b[_orderField]) return _orderAsc ? 1 : -1;
-          return 0;
+      const token = localStorage.getItem('auth_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      if (_method === 'GET') {
+        const params = new URLSearchParams();
+        Object.entries(filters).forEach(([k, v]) => params.append(k, String(v)));
+        if (_limit) params.set('limit', String(_limit));
+        if (_orderField) { params.set('sort', _orderField); params.set('order', _orderAsc ? 'asc' : 'desc'); }
+
+        const url = _id
+          ? `${API_URL}/api/${collection}/${_id}`
+          : `${API_URL}/api/${collection}?${params.toString()}`;
+
+        const res = await fetch(url, { headers });
+        const json = await res.json();
+        let data = json.data ?? json;
+
+        if (Array.isArray(data)) {
+          if (_orderField) {
+            data = data.sort((a: any, b: any) => {
+              if (a[_orderField] < b[_orderField]) return _orderAsc ? -1 : 1;
+              if (a[_orderField] > b[_orderField]) return _orderAsc ? 1 : -1;
+              return 0;
+            });
+          }
+          if (_limit) data = data.slice(0, _limit);
+          if (_single) data = data[0] ?? null;
+        }
+        return { data, error: json.error ? { message: json.error } : null };
+      } else if (_method === 'PUT') {
+        const targetId = _id || filters.id;
+        if (!targetId) return { data: null, error: { message: 'Update requires an ID. Use .eq("id", value) or .eq("user_id", value) for profiles.' } };
+
+        const res = await fetch(`${API_URL}/api/${collection}/${targetId}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(_body)
         });
+        const json = await res.json();
+        return { data: json.data, error: json.error ? { message: json.error } : null };
+      } else if (_method === 'DELETE') {
+        const targetId = _id || filters.id;
+        if (!targetId) return { data: null, error: { message: 'Delete requires an ID' } };
+
+        const res = await fetch(`${API_URL}/api/${collection}/${targetId}`, {
+          method: 'DELETE',
+          headers
+        });
+        const json = await res.json();
+        return { data: json, error: json.error ? { message: json.error } : null };
+      } else if (_method === 'POST') {
+        const res = await fetch(`${API_URL}/api/${collection}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(_body)
+        });
+        const json = await res.json();
+        return { data: json.data, error: json.error ? { message: json.error } : null };
       }
-      if (_limit) data = data.slice(0, _limit);
-      if (_single) data = data[0] ?? null;
-      return { data };
+      return { data: null, error: { message: 'Unsupported method' } };
     }
   };
 
   (builder as any).then = async (onfulfilled: any, onrejected: any) => {
-    try { const res = await builder.execute(); return onfulfilled ? onfulfilled(res) : res; }
-    catch (e) { if (onrejected) return onrejected(e); throw e; }
+    try {
+      const res = await builder.execute();
+      return onfulfilled ? onfulfilled(res) : res;
+    } catch (e) {
+      if (onrejected) return onrejected(e);
+      throw e;
+    }
   };
 
   return builder;
