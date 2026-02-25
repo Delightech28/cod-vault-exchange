@@ -32,7 +32,7 @@ function makeBuilder(collection: string) {
 
   const builder: any = {
     select: (_sel?: string) => builder,
-    eq: (field: string, val: any) => { 
+    eq: (field: string, val: any) => {
       if (field === 'id') {
         _id = String(val);
       } else {
@@ -46,8 +46,8 @@ function makeBuilder(collection: string) {
     update: async (data: any) => {
       if (!_id) throw new Error('update requires id (use .eq("id", value))');
       const token = localStorage.getItem('auth_token');
-      const res = await fetch(`${API_URL}/api/${collection}/${_id}`, { 
-        method: 'PUT', 
+      const res = await fetch(`${API_URL}/api/${collection}/${_id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(data)
       });
@@ -57,7 +57,7 @@ function makeBuilder(collection: string) {
     delete: async () => {
       if (!_id) throw new Error('delete requires id (use .eq("id", value))');
       const token = localStorage.getItem('auth_token');
-      const res = await fetch(`${API_URL}/api/${collection}/${_id}`, { 
+      const res = await fetch(`${API_URL}/api/${collection}/${_id}`, {
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
@@ -66,8 +66,8 @@ function makeBuilder(collection: string) {
     },
     insert: async (data: any) => {
       const token = localStorage.getItem('auth_token');
-      const res = await fetch(`${API_URL}/api/${collection}`, { 
-        method: 'POST', 
+      const res = await fetch(`${API_URL}/api/${collection}`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(data)
       });
@@ -117,23 +117,53 @@ export const supabase = {
       if (!token) return { data: { session: null } };
       try {
         const res = await fetch(`${API_URL}/auth/user`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) return { data: { session: null } };
         const json = await res.json();
         return { data: { session: { user: json.user ?? null, access_token: token } } };
       } catch (e) {
         return { data: { session: null } };
       }
     },
-    login: async ({ email, name }: { email: string, name?: string }) => {
-      const res = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, name }) });
-      const json = await res.json();
-      if (json.token) localStorage.setItem('auth_token', json.token);
-      // notify other parts of the app
-      try { window.dispatchEvent(new Event('supabase-login')); } catch(e){}
-      return { data: { user: json.user, token: json.token } };
+    signUp: async ({ email, password, name }: { email: string, password?: string, name?: string }) => {
+      try {
+        const res = await fetch(`${API_URL}/auth/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name })
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          return { data: { user: null, token: null }, error: { message: json.error || 'Sign up failed' } };
+        }
+        if (json.token) localStorage.setItem('auth_token', json.token);
+        try { window.dispatchEvent(new Event('supabase-login')); } catch (e) { }
+        return { data: { user: json.user, token: json.token }, error: null };
+      } catch (err: any) {
+        return { data: { user: null, token: null }, error: { message: err.message || 'Network error during signup' } };
+      }
+    },
+    login: async ({ email, password }: { email: string, password?: string }) => {
+      try {
+        const res = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          return { data: { user: null, token: null }, error: { message: json.error || 'Login failed' } };
+        }
+        if (json.token) localStorage.setItem('auth_token', json.token);
+        // notify other parts of the app
+        try { window.dispatchEvent(new Event('supabase-login')); } catch (e) { }
+        return { data: { user: json.user, token: json.token }, error: null };
+      } catch (err: any) {
+        return { data: { user: null, token: null }, error: { message: err.message || 'Network error during login' } };
+      }
     },
     signOut: async () => {
       localStorage.removeItem('auth_token');
-      try { window.dispatchEvent(new Event('supabase-logout')); } catch(e){}
+      try { window.dispatchEvent(new Event('supabase-logout')); } catch (e) { }
       return { error: null };
     },
     onAuthStateChange: (callback: (event: string, session: any) => void) => {
@@ -162,11 +192,17 @@ export const supabase = {
       const logoutListener = () => handler();
       window.addEventListener('supabase-logout', logoutListener as EventListener);
 
-      return { data: { subscription: { unsubscribe: () => {
-        window.removeEventListener('storage', storageListener);
-        window.removeEventListener('supabase-login', loginListener as EventListener);
-        window.removeEventListener('supabase-logout', logoutListener as EventListener);
-      } } } };
+      return {
+        data: {
+          subscription: {
+            unsubscribe: () => {
+              window.removeEventListener('storage', storageListener);
+              window.removeEventListener('supabase-login', loginListener as EventListener);
+              window.removeEventListener('supabase-logout', logoutListener as EventListener);
+            }
+          }
+        }
+      };
     }
   },
   from: (collection: string) => makeBuilder(collection),
@@ -232,18 +268,18 @@ export const supabase = {
   },
   channel: (name: string) => {
     const socket = getSocket();
-    const listeners: Array<{ eventName: string, handler: (...args:any[]) => void }> = [];
+    const listeners: Array<{ eventName: string, handler: (...args: any[]) => void }> = [];
     const ch = {
       name,
-      on: (_eventType: string, opts: any, handler: (...args:any[]) => void) => {
+      on: (_eventType: string, opts: any, handler: (...args: any[]) => void) => {
         // support Supabase 'postgres_changes' event shape: { event, schema, table }
         if (_eventType === 'postgres_changes' && opts && opts.table) {
           const events = opts.event === '*' ? ['INSERT', 'UPDATE', 'DELETE'] : [opts.event];
           events.forEach((evt: string) => {
             const eventName = `${opts.table}:${evt}`;
-            const fn = (...args:any[]) => handler(...args);
+            const fn = (...args: any[]) => handler(...args);
             listeners.push({ eventName, handler: fn });
-            try { socket?.on(eventName, fn); } catch(e){}
+            try { socket?.on(eventName, fn); } catch (e) { }
           });
         }
         return ch;
@@ -251,14 +287,14 @@ export const supabase = {
       subscribe: async () => ({ status: 'SUBSCRIBED' }),
       unsubscribe: () => {
         listeners.forEach(({ eventName, handler }) => {
-          try { socket?.off(eventName, handler); } catch(e){}
+          try { socket?.off(eventName, handler); } catch (e) { }
         });
         listeners.length = 0;
       }
     } as any;
     return ch;
   },
-  removeChannel: (ch: any) => { try { ch?.unsubscribe?.(); } catch(e){} },
+  removeChannel: (ch: any) => { try { ch?.unsubscribe?.(); } catch (e) { } },
   rpc: async (path: string, body?: any) => {
     const token = localStorage.getItem('auth_token');
     const res = await fetch(`${API_URL}/${path}`, { method: body ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined });

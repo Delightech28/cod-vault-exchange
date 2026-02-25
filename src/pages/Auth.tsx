@@ -9,13 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [signInData, setSignInData] = useState({ email: "", password: "" });
-  const [signUpData, setSignUpData] = useState({ 
-    name: "", 
+  const [signUpData, setSignUpData] = useState({
+    name: "",
     email: "",
     password: "",
     confirmPassword: ""
@@ -27,26 +27,23 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: signInData.email, password: signInData.password })
+      const { data, error } = await supabase.auth.login({
+        email: signInData.email,
+        password: signInData.password
       });
 
-      const json = await res.json();
       setLoading(false);
 
-      if (json.error) {
+      if (error) {
         toast({
           title: "Sign in failed",
-          description: json.error,
+          description: error.message,
           variant: "destructive",
         });
         return;
       }
 
-      if (json.token) {
-        localStorage.setItem('auth_token', json.token);
+      if (data?.token) {
         toast({
           title: "Welcome back!",
           description: "Redirecting to dashboard...",
@@ -77,22 +74,20 @@ export default function Auth() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/auth/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: signUpData.email, name: signUpData.name, password: signUpData.password })
+      const { data, error } = await supabase.auth.signUp({
+        email: signUpData.email,
+        name: signUpData.name,
+        password: signUpData.password
       });
 
-      const json = await res.json();
       setLoading(false);
 
-      if (json.error) {
-        toast({ title: 'Sign up failed', description: json.error, variant: 'destructive' });
+      if (error) {
+        toast({ title: 'Sign up failed', description: error.message, variant: 'destructive' });
         return;
       }
 
-      if (json.token) {
-        localStorage.setItem('auth_token', json.token);
+      if (data?.token) {
         toast({ title: 'Account created!', description: 'Redirecting to complete your profile...' });
         navigate('/onboarding');
       }
@@ -113,7 +108,7 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       <main className="container mx-auto px-4 py-12">
         <Link to="/" className="inline-flex items-center text-primary hover:text-primary/80 mb-6">
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -145,7 +140,7 @@ export default function Auth() {
                         type="email"
                         placeholder="your.email@example.com"
                         value={signInData.email}
-                        onChange={(e) => setSignInData({...signInData, email: e.target.value})}
+                        onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
                         required
                       />
                     </div>
@@ -157,7 +152,7 @@ export default function Auth() {
                         type="password"
                         placeholder="••••••••"
                         value={signInData.password}
-                        onChange={(e) => setSignInData({...signInData, password: e.target.value})}
+                        onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
                         required
                       />
                     </div>
@@ -167,7 +162,7 @@ export default function Auth() {
                       Sign In
                     </Button>
 
-                    
+
                   </form>
                 </CardContent>
               </Card>
@@ -190,7 +185,7 @@ export default function Auth() {
                         id="signup-name"
                         placeholder="John Doe"
                         value={signUpData.name}
-                        onChange={(e) => setSignUpData({...signUpData, name: e.target.value})}
+                        onChange={(e) => setSignUpData({ ...signUpData, name: e.target.value })}
                         required
                       />
                     </div>
@@ -202,7 +197,7 @@ export default function Auth() {
                         type="email"
                         placeholder="your.email@example.com"
                         value={signUpData.email}
-                        onChange={(e) => setSignUpData({...signUpData, email: e.target.value})}
+                        onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
                         required
                       />
                     </div>
@@ -214,7 +209,7 @@ export default function Auth() {
                         type="password"
                         placeholder="••••••••"
                         value={signUpData.password}
-                        onChange={(e) => setSignUpData({...signUpData, password: e.target.value})}
+                        onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
                         required
                       />
                     </div>
@@ -226,7 +221,7 @@ export default function Auth() {
                         type="password"
                         placeholder="••••••••"
                         value={signUpData.confirmPassword}
-                        onChange={(e) => setSignUpData({...signUpData, confirmPassword: e.target.value})}
+                        onChange={(e) => setSignUpData({ ...signUpData, confirmPassword: e.target.value })}
                         required
                       />
                     </div>
